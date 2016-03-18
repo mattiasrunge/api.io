@@ -1,0 +1,24 @@
+{
+  "name": "api.io",
+  "version": "0.0.1",
+  "description": "Small framework for easily exposing an API over websockets to clients",
+  "main": "api.io.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mattiasrunge/api.io.git"
+  },
+  "keywords": [
+    "api",
+    "ws",
+    "promise"
+  ],
+  "author": "Mattias Runge <mattias@runge.se>",
+  "license": "GPL-2.0",
+  "bugs": {
+    "url": "https://github.com/mattiasrunge/api.io/issues"
+  },
+  "homepage": "https://github.com/mattiasrunge/api.io#readme"
+}
