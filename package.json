@@ -1,6 +1,6 @@
 {
   "name": "api.io",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Small framework for easily exposing an API over websockets to clients",
   "main": "api.io.js",
   "repository": {
@@ -19,6 +19,8 @@
   },
   "homepage": "https://github.com/mattiasrunge/api.io#readme",
   "dependencies": {
+    "babel-cli": "^6.6.5",
+    "babel-plugin-transform-es2015-modules-amd": "^6.6.5",
     "socket.io": "1.4.5"
   },
   "devDependencies": {
