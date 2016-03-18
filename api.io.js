@@ -74,20 +74,17 @@ module.exports = {
 
         return objects[namespace][method].apply(objects[namespace], args);
     },
-    co: (fn) => {
-        let cofn = co(fn);
-        cofn.params = getParamNames(fn);
-        cofn.params.shift(); // Remove session from list
-        return cofn;
-    },
     register: (namespace, obj) => {
         definitions[namespace] = {};
         objects[namespace] = obj;
 
         for (let name of Object.keys(obj)) {
-            if (typeof obj[name].params !== "undefined") {
-                definitions[namespace][name] = obj[name].params;
+            if (name[0] === "_" || obj[name].constructor.name !== "GeneratorFunction") {
+                continue;
             }
+
+            definitions[namespace][name] = getParamNames(obj[name])
+            obj[name] = co(obj[name]);
         }
 
         emitter.emit("namespace", namespace);

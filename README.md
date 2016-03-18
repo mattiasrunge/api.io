@@ -6,9 +6,13 @@ Small framework for easily exposing an API over websockets to clients
 const api = require("api.io");
 
 api.register("myApi", {
-    sum: api.co(function*(session, a, b) {
+    notApi: function() {
+        // Only generator functions will be included in
+        // the exposed API
+    },
+    sum: function*(session, a, b) {
         return a + b;
-    })
+    }
 });
 
 yield api.connect(server);
