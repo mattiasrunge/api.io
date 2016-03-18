@@ -85,6 +85,7 @@ module.exports = {
             }
 
             definitions[namespace][name] = getParamNames(obj[name]);
+            definitions[namespace][name].shift(); // Remove session
             obj[name] = co(obj[name]);
         }
 
