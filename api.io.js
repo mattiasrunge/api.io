@@ -21,6 +21,7 @@ const getParamNames = (fn) => {
 };
 
 module.exports = {
+    client: require("./api.io-client"),
     start: co(function*(server) {
         io = socket(server);
 
@@ -83,7 +84,7 @@ module.exports = {
                 continue;
             }
 
-            definitions[namespace][name] = getParamNames(obj[name])
+            definitions[namespace][name] = getParamNames(obj[name]);
             obj[name] = co(obj[name]);
         }
 

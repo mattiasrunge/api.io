@@ -1,6 +1,6 @@
 {
   "name": "api.io",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Small framework for easily exposing an API over websockets to clients",
   "main": "api.io.js",
   "repository": {
@@ -21,6 +21,7 @@
   "dependencies": {
     "babel-cli": "^6.6.5",
     "babel-plugin-transform-es2015-modules-amd": "^6.6.5",
+    "bluebird": "^3.3.4",
     "socket.io": "1.4.5"
   },
   "devDependencies": {
