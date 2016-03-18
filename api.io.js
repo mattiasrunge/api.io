@@ -99,8 +99,3 @@ module.exports = {
         emitter.on(event, fn);
     }
 };
-
-
-//             params.api.emit = (event, data) => {
-//                 io.emit(event, data);
-//             };
