@@ -2,7 +2,6 @@
 
 const socket = require("socket.io");
 const EventEmitter = require("events");
-const util = require("util");
 const Bluebird = require("bluebird");
 const co = Bluebird.coroutine;
 

@@ -3,9 +3,6 @@
   "version": "0.0.1",
   "description": "Small framework for easily exposing an API over websockets to clients",
   "main": "api.io.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/mattiasrunge/api.io.git"
@@ -20,5 +17,15 @@
   "bugs": {
     "url": "https://github.com/mattiasrunge/api.io/issues"
   },
-  "homepage": "https://github.com/mattiasrunge/api.io#readme"
+  "homepage": "https://github.com/mattiasrunge/api.io#readme",
+  "dependencies": {
+    "socket.io": "1.4.5"
+  },
+  "devDependencies": {
+    "jshint": "2.9.1",
+    "jscs": "2.10.1"
+  },
+  "engines": {
+    "node": ">= 5.7.0"
+  }
 }
