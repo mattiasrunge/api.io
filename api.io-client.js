@@ -1,40 +1,15 @@
 "use strict";
 
 const socket = require("socket.io-client");
-const Bluebird = require("bluebird");
-const co = Bluebird.coroutine;
 
 let io = null;
 let params = {};
 let connected = false;
 
 module.exports = {
-    connect: co(function*(config) {
+    connect: (config) => {
         params = config;
 
-        yield module.exports._connect();
-
-        let api = yield module.exports._call("api", {});
-
-        for (let namespace of Object.keys(api)) {
-            module.exports[namespace] = {};
-
-            for (let method of Object.keys(api[namespace])) {
-                module.exports[namespace][method] = function() {
-                    let name = namespace + "." + method;
-                    let args = Array.from(arguments);
-                    let data = {};
-
-                    for (let name of api[namespace][method]) {
-                        data[name] = args.shift();
-                    }
-
-                    return module.exports._call(name, data);
-                };
-            }
-        }
-    }),
-    _connect: () => {
         return new Promise((resolve, reject) => {
             let url = "ws://" + params.hostname + ":" + params.port;
 
@@ -42,7 +17,6 @@ module.exports = {
 
             io.on("connect", () => {
                 connected = true;
-                resolve();
             });
 
             io.on("connect_error", (error) => {
@@ -57,7 +31,29 @@ module.exports = {
 
             io.on("disconnect", () => {
                 connected = false;
-                console.error("Dis_connected from server...");
+                console.error("Disconnected from server...");
+            });
+
+            io.on("ready", (definitions) => {
+                for (let namespace of Object.keys(definitions)) {
+                    module.exports[namespace] = {};
+
+                    for (let method of Object.keys(definitions[namespace])) {
+                        module.exports[namespace][method] = function() {
+                            let name = namespace + "." + method;
+                            let args = Array.from(arguments);
+                            let data = {};
+
+                            for (let name of definitions[namespace][method]) {
+                                data[name] = args.shift();
+                            }
+
+                            return module.exports._call(name, data);
+                        };
+                    }
+                }
+
+                resolve();
             });
         });
     },
@@ -76,8 +72,11 @@ module.exports = {
             });
         });
     },
-    disconnect: co(function*() {
-        io.close();
-        connected = false;
-    })
+    disconnect: () => {
+        return new Promise((resolve) => {
+            io.close();
+            connected = false;
+            resolve();
+        });
+    }
 };

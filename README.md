@@ -29,7 +29,9 @@ api.on("disconnection", (client) => {
 yield api.disconnect();
 ```
 
-## Usage client side
+## Usage client side ES6
+Requires that socket.io-client is available via requirejs.
+
 ```js
 const api = require("api.io-client");
 

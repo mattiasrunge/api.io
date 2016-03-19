@@ -28,10 +28,6 @@ module.exports = {
         io.on("connection", (client) => {
             client.session = client.session || {};
 
-            client.on("api", (data, ack) => {
-                ack(null, definitions);
-            });
-
             for (let namespace of Object.keys(definitions)) {
                 for (let method of Object.keys(definitions[namespace])) {
                     client.on(namespace + "." + method, (data, ack) => {
@@ -50,6 +46,8 @@ module.exports = {
             }
 
             emitter.emit("connection", client);
+
+            client.emit("ready", definitions);
         });
 
         io.on("disconnection", (client) => {
