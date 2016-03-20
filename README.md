@@ -42,7 +42,7 @@ yield api.disconnect();
 ```
 
 ## Usage client side ES6
-Requires that socket.io-client is available via requirejs.
+Requires that socket.io-client and bluebird is available via requirejs.
 
 ```js
 const api = require("api.io-client");

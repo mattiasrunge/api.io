@@ -1,6 +1,8 @@
 "use strict";
 
 const socket = require("socket.io-client");
+const Bluebird = require("bluebird");
+const co = Bluebird.coroutine;
 
 let io = null;
 let params = {};
@@ -53,18 +55,9 @@ module.exports = {
                     }
 
                     module.exports[namespace].on = (event, fn) => {
-                        // jshint ignore:start
-                        // jscs:disable
                         if (fn.constructor.name === "GeneratorFunction") {
-                            let ofn = fn;
-                            fn = (data) => {
-                                let it = ofn(data);
-                                while (!it.next().done) {}
-
-                            };
+                            fn = co(fn);
                         }
-                        // jscs:enable
-                        // jshint ignore:end
 
                         io.on(namespace + "." + event, fn);
                         return { event: namespace + "." + event, fn: fn };
