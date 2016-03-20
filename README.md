@@ -19,10 +19,14 @@ yield api.connect(server);
 
 myApi.emit("event", "Hello World!");
 
+myApi.emit("event", "Hello World!", { username: "guest" });
+
 let connectionSubscription = api.on("connection", function*(client) => {
     // Do something with client
     // client.session is available
     // Both generator functions and ordinary functions ar supported
+
+    client.session.username = "guest";
 });
 
 let disconnectionSubscription = api.on("disconnection", (client) => {

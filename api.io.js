@@ -87,8 +87,27 @@ module.exports = {
             obj[name] = co(obj[name]);
         }
 
-        obj.emit = (event, data) => {
-            io.emit(namespace + "." + event, data);
+        obj.emit = (event, data, sessionFilter) => {
+            if (!sessionFilter || typeof sessionFilter !== "object") {
+                return io.emit(namespace + "." + event, data);
+            }
+
+            Object.keys(io.sockets.sockets)
+            .map((id) => {
+                return io.sockets.sockets[id];
+            })
+            .filter((client) => {
+                for (let key of sessionFilter) {
+                    if (sessionFilter[key] !== client.session[key]) {
+                        return false;
+                    }
+                }
+
+                return true;
+            })
+            .forEach((client) => {
+                client.emit(namespace + "." + event, data);
+            });
         };
 
         emitter.emit("namespace", namespace);
