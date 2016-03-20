@@ -51,6 +51,28 @@ module.exports = {
                             return module.exports._call(name, data);
                         };
                     }
+
+                    module.exports[namespace].on = (event, fn) => {
+                        // jshint ignore:start
+                        // jscs:disable
+                        if (fn.constructor.name === "GeneratorFunction") {
+                            let ofn = fn;
+                            fn = (data) => {
+                                let it = ofn(data);
+                                while (!it.next().done) {}
+
+                            };
+                        }
+                        // jscs:enable
+                        // jshint ignore:end
+
+                        io.on(namespace + "." + event, fn);
+                        return { event: namespace + "." + event, fn: fn };
+                    };
+
+                    module.exports[namespace].off = (subscription) => {
+                        io.removeListener(subscription.event, subscription.fn);
+                    };
                 }
 
                 resolve();

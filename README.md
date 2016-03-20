@@ -1,11 +1,11 @@
 # api.io
-Small framework for easily exposing an API over websockets to clients
+Small framework for easily exposing an API over websockets to clients. Requires a modern web browser and nodejs which support arrow functions, promises, generators and let.
 
 ## Usage server side
 ```js
 const api = require("api.io");
 
-api.register("myApi", {
+let myApi = api.register("myApi", {
     notApi: function() {
         // Only generator functions will be included in
         // the exposed API
@@ -17,14 +17,22 @@ api.register("myApi", {
 
 yield api.connect(server);
 
-api.on("connection", (client) => {
+myApi.emit("event", "Hello World!");
+
+let connectionSubscription = api.on("connection", function*(client) => {
     // Do something with client
     // client.session is available
+    // Both generator functions and ordinary functions ar supported
 });
 
-api.on("disconnection", (client) => {
+let disconnectionSubscription = api.on("disconnection", (client) => {
     // Do something with client
+    // client.session is available
+    // Both generator functions and ordinary functions ar supported
 });
+
+api.off(connectionSubscription);
+api.off(disconnectionSubscription);
 
 yield api.disconnect();
 ```
@@ -40,7 +48,20 @@ yield api.init({
     port: location.port
 });
 
-let result = yield api.myApi(1, 2);
-
+let result = yield api.myApi.sum(1, 2);
 // result === 3
+
+let subscription1 = api.myApi.on("event", function*(data) {
+    // data === "Hello World"
+    // Both generator functions and ordinary functions ar supported
+});
+
+let subscription2 = api.myApi.on("event", function(data) {
+    // data === "Hello World"
+    // Both generator functions and ordinary functions ar supported
+});
+
+
+api.myApi.off(subscription1);
+api.myApi.off(subscription2);
 ```

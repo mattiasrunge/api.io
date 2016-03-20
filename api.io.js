@@ -87,11 +87,20 @@ module.exports = {
             obj[name] = co(obj[name]);
         }
 
+        obj.emit = (event, data) => {
+            io.emit(namespace + "." + event, data);
+        };
+
         emitter.emit("namespace", namespace);
 
         return obj;
     },
     on: (event, fn) => {
+        if (fn.constructor.name === "GeneratorFunction") {
+            fn = co(fn);
+        }
+
         emitter.on(event, fn);
+        return { event: event, fn: fn };
     }
 };
