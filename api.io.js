@@ -87,7 +87,7 @@ module.exports = {
             obj[name] = co(obj[name]);
         }
 
-        obj.emit = (event, data, sessionFilter) => {
+        obj.emit = function(event, data, sessionFilter) {
             if (!sessionFilter || typeof sessionFilter !== "object") {
                 return io.emit(namespace + "." + event, data);
             }
@@ -97,7 +97,7 @@ module.exports = {
                 return io.sockets.sockets[id];
             })
             .filter((client) => {
-                for (let key of sessionFilter) {
+                for (let key of Object.keys(sessionFilter)) {
                     if (sessionFilter[key] !== client.session[key]) {
                         return false;
                     }

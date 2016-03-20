@@ -1,6 +1,6 @@
 {
   "name": "api.io",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "Small framework for easily exposing an API over websockets to clients",
   "main": "api.io.js",
   "repository": {
