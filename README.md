@@ -101,14 +101,14 @@ let run = co(function*() {
 run();
 ```
 
-## Usage client side ES6
+### Usage client side ES6
 Requires that socket.io-client and bluebird is available via requirejs.
 
 ```js
 require.config({
     baseUrl: ".",
     paths: {
-        bluebird: "node_modules/bluebird/js/browser/bluebird.min",
+        "bluebird": "node_modules/bluebird/js/browser/bluebird.min",
         "socket.io-client": "/socket.io/socket.io",
         "api.io-client": "node_modules/api.io/browser/api.io-client"
     }
@@ -120,7 +120,7 @@ define([ "api.io-client", "bluebird" ], (api, bluebird) => {
     let run = co(function*() {
         // Connect to the API server via socket.io
         yield api.connect({
-            hostname: "localhost",
+            hostname: location.hostname,
             port: 8080
         });
 
