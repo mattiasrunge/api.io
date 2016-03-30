@@ -1,71 +1,150 @@
 # api.io
-Small framework for easily exposing an API over websockets to clients. Requires a modern web browser and nodejs which support arrow functions, promises, generators and let.
+Small node.js framework for easily exposing an APIa over websockets to clients. Uses ES6 but there is a requirejs version available for use in a browser, though it still requires a modern web browser which support arrow functions, promises, generators and let.
 
-## Usage server side
+## Usage
+
+### Expose an API in node.js
 ```js
+const http = require("http");
 const api = require("api.io");
+const co = require("bluebird").coroutine;
 
+// Registers the api with the name myAapi
 let myApi = api.register("myApi", {
     notApi: function() {
-        // Only generator functions will be included in
-        // the exposed API
+        // Only generator functions will be included in the exposed API
     },
     sum: function*(session, a, b) {
         return a + b;
     }
 });
 
-yield api.connect(server);
+let run = co(function*() {
+    // Start a HTTP server and connect the API to it
+    // This will setup a socket.io connection and it will
+    // not work if you try to setup your own socket.io also
+    let server = http.Server();
+    yield api.connect(server);
+    server.listen(8080);
 
-myApi.emit("event", "Hello World!");
+    // Subscribe a listener for new clients
+    let connectionSubscription = api.on("connection", function*(client) => {
+        // Do something with client
+        // client.session is available
+        // Both generator functions and ordinary functions ar supported
 
-myApi.emit("event", "Hello World!", { username: "guest" });
+        client.session.username = "guest";
+    });
 
-let connectionSubscription = api.on("connection", function*(client) => {
-    // Do something with client
-    // client.session is available
-    // Both generator functions and ordinary functions ar supported
+    // Subscribe a listener for lost clients
+    let disconnectionSubscription = api.on("disconnection", (client) => {
+        // Do something with client
+        // client.session is available
+        // Both generator functions and ordinary functions ar supported
+    });
 
-    client.session.username = "guest";
+    // Emit event1 to all clients in the myApi namespace
+    myApi.emit("event1", "Hello World!");
+
+    // Emit event2 to client in the myApi namespace that have a session with username = "guest"
+    myApi.emit("event2", "Hello World!", { username: "guest" });
+
+
+    // Unsubscribe listeners from new or lost client events
+    api.off(connectionSubscription);
+    api.off(disconnectionSubscription);
+
+    // Shut down the socket.io connection
+    yield api.disconnect();
+
+    // Close the HTTP server
+    // Don't forget to close active clients (server-destroy is a good helper for this)
+    server.close();
 });
 
-let disconnectionSubscription = api.on("disconnection", (client) => {
-    // Do something with client
-    // client.session is available
-    // Both generator functions and ordinary functions ar supported
+run();
+```
+
+### Use an API from a node.js client application
+```js
+const api = require("api.io").client;
+const co = require("bluebird").coroutine;
+
+let run = co(function*() {
+    // Connect to the API server via socket.io
+    yield api.connect({
+        hostname: "localhost",
+        port: 8080
+    });
+
+    // Do a function call to the myApi
+    let result = yield api.myApi.sum(1, 2);
+    // result === 3
+
+    // Subscribe to myApi event1
+    let subscription1 = api.myApi.on("event1", function*(data) {
+        // data === "Hello World"
+        // Both generator functions and ordinary functions ar supported
+    });
+
+    // Subscribe to myApi event2
+    let subscription2 = api.myApi.on("event2", function(data) {
+        // data === "Hello World"
+        // Both generator functions and ordinary functions ar supported
+    });
+
+    // Unsubscribe from events
+    api.myApi.off(subscription1);
+    api.myApi.off(subscription2);
 });
 
-api.off(connectionSubscription);
-api.off(disconnectionSubscription);
-
-yield api.disconnect();
+run();
 ```
 
 ## Usage client side ES6
 Requires that socket.io-client and bluebird is available via requirejs.
 
 ```js
-const api = require("api.io-client");
-
-yield api.init({
-    hostname: location.hostname,
-    port: location.port
+require.config({
+    baseUrl: ".",
+    paths: {
+        bluebird: "node_modules/bluebird/js/browser/bluebird.min",
+        "socket.io-client": "/socket.io/socket.io",
+        "api.io-client": "node_modules/api.io/browser/api.io-client"
+    }
 });
 
-let result = yield api.myApi.sum(1, 2);
-// result === 3
+define([ "api.io-client", "bluebird" ], (api, bluebird) => {
+    const co = bluebird.coroutine;
 
-let subscription1 = api.myApi.on("event", function*(data) {
-    // data === "Hello World"
-    // Both generator functions and ordinary functions ar supported
+    let run = co(function*() {
+        // Connect to the API server via socket.io
+        yield api.connect({
+            hostname: "localhost",
+            port: 8080
+        });
+
+        // Do a function call to the myApi
+        let result = yield api.myApi.sum(1, 2);
+        // result === 3
+
+        // Subscribe to myApi event1
+        let subscription1 = api.myApi.on("event1", function*(data) {
+            // data === "Hello World"
+            // Both generator functions and ordinary functions ar supported
+        });
+
+        // Subscribe to myApi event2
+        let subscription2 = api.myApi.on("event2", function(data) {
+            // data === "Hello World"
+            // Both generator functions and ordinary functions ar supported
+        });
+
+        // Unsubscribe from events
+        api.myApi.off(subscription1);
+        api.myApi.off(subscription2);
+    });
+
+    run();
 });
-
-let subscription2 = api.myApi.on("event", function(data) {
-    // data === "Hello World"
-    // Both generator functions and ordinary functions ar supported
-});
-
-
-api.myApi.off(subscription1);
-api.myApi.off(subscription2);
 ```
