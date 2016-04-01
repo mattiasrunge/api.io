@@ -1,7 +1,5 @@
-define(["module", "socket.io-client", "bluebird"], function (module, socket, Bluebird) {
+define(["module", "socket.io-client", "co"], function (module, socket, co) {
     "use strict";
-
-    const co = Bluebird.coroutine;
 
     let io = null;
     let params = {};
@@ -55,7 +53,7 @@ define(["module", "socket.io-client", "bluebird"], function (module, socket, Blu
 
                         module.exports[namespace].on = (event, fn) => {
                             if (fn.constructor.name === "GeneratorFunction") {
-                                fn = co(fn);
+                                fn = co.wrap(fn);
                             }
 
                             io.on(namespace + "." + event, fn);

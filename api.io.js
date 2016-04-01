@@ -2,8 +2,7 @@
 
 const socket = require("socket.io");
 const EventEmitter = require("events");
-const Bluebird = require("bluebird");
-const co = Bluebird.coroutine;
+const co = require("co");
 
 let io = null;
 let definitions = {};
@@ -22,43 +21,50 @@ const getParamNames = (fn) => {
 
 module.exports = {
     client: require("./api.io-client"),
-    start: co(function*(server) {
-        io = socket(server);
+    start: (server) => {
+        return new Promise((resolve) => {
+            io = socket(server);
 
-        io.on("connection", (client) => {
-            client.session = client.session || {};
+            io.on("connection", (client) => {
+                client.session = client.session || {};
 
-            for (let namespace of Object.keys(definitions)) {
-                for (let method of Object.keys(definitions[namespace])) {
-                    client.on(namespace + "." + method, (data, ack) => {
-                        module.exports._call(client.session, namespace, method, data)
-                        .then((result) => {
-                            ack(null, result);
-                        })
-                        .catch((error) => {
-                            console.error("Call to " + namespace + "." + method + " threw: " + error);
-                            console.error("data", JSON.stringify(data, null, 2));
-                            console.error(error.stack);
-                            ack(error.stack);
+                for (let namespace of Object.keys(definitions)) {
+                    for (let method of Object.keys(definitions[namespace])) {
+                        client.on(namespace + "." + method, (data, ack) => {
+                            module.exports._call(client.session, namespace, method, data)
+                            .then((result) => {
+                                ack(null, result);
+                            })
+                            .catch((error) => {
+                                console.error("Call to " + namespace + "." + method + " threw: " + error);
+                                console.error("data", JSON.stringify(data, null, 2));
+                                console.error(error.stack);
+                                ack(error.stack);
+                            });
                         });
-                    });
+                    }
                 }
-            }
 
-            emitter.emit("connection", client);
+                emitter.emit("connection", client);
 
-            client.emit("ready", definitions);
+                client.emit("ready", definitions);
+            });
+
+            io.on("disconnection", (client) => {
+                emitter.emit("disconnection", client);
+            });
+
+            resolve();
         });
-
-        io.on("disconnection", (client) => {
-            emitter.emit("disconnection", client);
+    },
+    stop: () => {
+        return new Promise((resolve) => {
+            io = null;
+            definitions = {};
+            objects = {};
+            resolve();
         });
-    }),
-    stop: co(function*() {
-        io = null;
-        definitions = {};
-        objects = {};
-    }),
+    },
     _call: (session, namespace, method, data) => {
         if (!objects[namespace]) {
             throw new Error("No such namespace");
@@ -84,7 +90,7 @@ module.exports = {
 
             definitions[namespace][name] = getParamNames(obj[name]);
             definitions[namespace][name].shift(); // Remove session
-            obj[name] = co(obj[name]);
+            obj[name] = co.wrap(obj[name]);
         }
 
         obj.emit = function(event, data, sessionFilter) {
@@ -116,10 +122,13 @@ module.exports = {
     },
     on: (event, fn) => {
         if (fn.constructor.name === "GeneratorFunction") {
-            fn = co(fn);
+            fn = co.wrap(fn);
         }
 
         emitter.on(event, fn);
         return { event: event, fn: fn };
+    },
+    off: (subscription) => {
+        emitter.removeListener(subscription.event, subscription.fn);
     }
 };

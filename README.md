@@ -7,11 +7,11 @@ Small node.js framework for easily exposing an APIa over websockets to clients. 
 ```js
 const http = require("http");
 const api = require("api.io");
-const co = require("bluebird").coroutine;
+const co = require("co");
 
 // Registers the api with the name myAapi
 let myApi = api.register("myApi", {
-    notApi: function() {
+    notApi: () => {
         // Only generator functions will be included in the exposed API
     },
     sum: function*(session, a, b) {
@@ -19,7 +19,7 @@ let myApi = api.register("myApi", {
     }
 });
 
-let run = co(function*() {
+let run = co.wrap(function*() {
     // Start a HTTP server and connect the API to it
     // This will setup a socket.io connection and it will
     // not work if you try to setup your own socket.io also
@@ -28,7 +28,7 @@ let run = co(function*() {
     server.listen(8080);
 
     // Subscribe a listener for new clients
-    let connectionSubscription = api.on("connection", function*(client) => {
+    let connectionSubscription = api.on("connection", function*(client) {
         // Do something with client
         // client.session is available
         // Both generator functions and ordinary functions ar supported
@@ -55,7 +55,7 @@ let run = co(function*() {
     api.off(disconnectionSubscription);
 
     // Shut down the socket.io connection
-    yield api.disconnect();
+    yield api.stop();
 
     // Close the HTTP server
     // Don't forget to close active clients (server-destroy is a good helper for this)
@@ -68,11 +68,11 @@ run();
 ### Use an API from a node.js client application
 ```js
 const api = require("api.io").client;
-const co = require("bluebird").coroutine;
+const co = require("co");
 
-let run = co(function*() {
+let run = co.wrap(function*() {
     // Connect to the API server via socket.io
-    yield api.connect({
+    yield api.start({
         hostname: "localhost",
         port: 8080
     });
@@ -102,24 +102,22 @@ run();
 ```
 
 ### Usage client side ES6
-Requires that socket.io-client and bluebird is available via requirejs.
+Requires that socket.io-client and co is available via requirejs.
 
 ```js
 require.config({
     baseUrl: ".",
     paths: {
-        "bluebird": "node_modules/bluebird/js/browser/bluebird.min",
+        "co": "node_modules/api.io/browser/co",
         "socket.io-client": "/socket.io/socket.io",
         "api.io-client": "node_modules/api.io/browser/api.io-client"
     }
 });
 
-define([ "api.io-client", "bluebird" ], (api, bluebird) => {
-    const co = bluebird.coroutine;
-
-    let run = co(function*() {
+define([ "api.io-client", "co" ], (api, co) => {
+    let run = co.wrap(function*() {
         // Connect to the API server via socket.io
-        yield api.connect({
+        yield api.start({
             hostname: location.hostname,
             port: 8080
         });
