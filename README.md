@@ -108,9 +108,9 @@ Requires that socket.io-client and co is available via requirejs.
 require.config({
     baseUrl: ".",
     paths: {
-        "co": "node_modules/api.io/browser/co",
         "socket.io-client": "/socket.io/socket.io",
-        "api.io-client": "node_modules/api.io/browser/api.io-client"
+        "api.io-client": "/api.io/api.io-client",
+        "co": "/api.io/co"
     }
 });
 

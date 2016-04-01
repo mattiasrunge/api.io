@@ -1,14 +1,19 @@
 "use strict";
 
+const fs = require("fs");
+const path = require("path");
 const socket = require("socket.io");
 const EventEmitter = require("events");
 const co = require("co");
+const version = require("./package.json").version;
 
 let io = null;
 let definitions = {};
 let objects = {};
 let emitter = new EventEmitter();
+let files = {};
 
+// Credits: http://stackoverflow.com/questions/30030161/javascript-function-arguments-positional-map-transition
 const getParamNames = (fn) => {
     const STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
     const ARGUMENT_NAMES = /([^\s,]+)/g;
@@ -19,10 +24,13 @@ const getParamNames = (fn) => {
     return result === null ? [] : result;
 };
 
+// Credits: File serving is inspired by how socket.io does it
 module.exports = {
     client: require("./api.io-client"),
     start: (server) => {
         return new Promise((resolve) => {
+            module.exports._addRoutes(server);
+
             io = socket(server);
 
             io.on("connection", (client) => {
@@ -78,6 +86,69 @@ module.exports = {
         args.unshift(session);
 
         return objects[namespace][method].apply(objects[namespace], args);
+    },
+    _addRoutes: (server) => {
+        let listeners = server.listeners("request").slice(0);
+        server.removeAllListeners("request");
+
+        server.on("request", (request, response) => {
+            let url = path.normalize(request.url);
+
+            if (url.indexOf("/api.io/") === 0) {
+                module.exports._serveFiles(request, response, url);
+            } else {
+                for (let listener of listeners) {
+                    listener.call(server, request, response);
+                }
+            }
+        });
+    },
+    _serveFiles: (request, response, url) => {
+        let etag = request.headers["if-none-match"];
+
+        if (etag) {
+            if (version === etag) {
+                response.writeHead(304);
+                response.end();
+                return;
+            }
+        }
+
+        module.exports._getFileData(url.replace("/api.io/", ""))
+        .then((data) => {
+            response.setHeader("Content-Type", "application/javascript");
+            response.setHeader("ETag", version);
+            response.writeHead(200);
+            response.end(data);
+        })
+        .catch((error, status) => {
+            response.writeHead(status);
+            response.end(error);
+        });
+    },
+    _getFileData: function(url) {
+        return new Promise((resolve, reject) => {
+            if (files[url]) {
+                return resolve(files[url]);
+            }
+
+            let filename = path.resolve(__dirname, "browser", url);
+
+            fs.access(filename, fs.R_OK, (error) => {
+                if (error) {
+                    return reject(error, 404);
+                }
+
+                fs.readFile(filename, (error, data) => {
+                    if (error) {
+                        return reject(error, 500);
+                    }
+
+                    files[url] = data;
+                    resolve(data);
+                });
+            });
+        });
     },
     register: (namespace, obj) => {
         definitions[namespace] = {};

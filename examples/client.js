@@ -3,7 +3,7 @@
 const api = require("api.io").client;
 const co = require("co");
 
-let run = co(function*() {
+let run = co.wrap(function*() {
     // Connect to the API server via socket.io
     yield api.connect({
         hostname: "localhost",
