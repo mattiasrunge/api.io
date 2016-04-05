@@ -1,6 +1,6 @@
 {
   "name": "api.io",
-  "version": "0.0.16",
+  "version": "0.0.17",
   "description": "Small framework for easily exposing an API over websockets to clients",
   "main": "api.io.js",
   "repository": {
@@ -20,6 +20,7 @@
   "homepage": "https://github.com/mattiasrunge/api.io#readme",
   "dependencies": {
     "co": "^4.6.0",
+    "cookie": "^0.2.3",
     "socket.io": "^1.4.5"
   },
   "devDependencies": {

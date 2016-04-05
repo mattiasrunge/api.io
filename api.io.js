@@ -3,6 +3,7 @@
 const fs = require("fs");
 const path = require("path");
 const socket = require("socket.io");
+const cookie = require("cookie");
 const EventEmitter = require("events");
 const co = require("co");
 const version = require("./package.json").version;
@@ -27,13 +28,28 @@ const getParamNames = (fn) => {
 // Credits: File serving is inspired by how socket.io does it
 module.exports = {
     client: require("./api.io-client"),
-    start: (server) => {
+    start: (server, sessionCookieName, sessions) => {
         return new Promise((resolve) => {
             module.exports._addRoutes(server);
 
             io = socket(server);
 
+            if (sessionCookieName) {
+                io.set("authorization", function(request, accept) {
+                    if (request.headers.cookie && request.headers.cookie.indexOf(sessionCookieName) !== -1) {
+                        request.sessionCookie = cookie.parse(request.headers.cookie)[sessionCookieName];
+                        request.sessionId = JSON.parse(new Buffer(request.sessionCookie, "base64")).sessionId;
+                    }
+
+                    accept(null, true);
+                });
+            }
+
             io.on("connection", (client) => {
+                if (client.request.sessionId && sessions) {
+                    client.session = sessions[client.request.sessionId];
+                }
+
                 client.session = client.session || {};
 
                 for (let namespace of Object.keys(definitions)) {
@@ -187,9 +203,14 @@ module.exports = {
             });
         };
 
+        obj.namespace = namespace;
+
         emitter.emit("namespace", namespace);
 
         return obj;
+    },
+    isRegistered: (namespace) => {
+        return !!definitions[namespace];
     },
     on: (event, fn) => {
         if (fn.constructor.name === "GeneratorFunction") {
