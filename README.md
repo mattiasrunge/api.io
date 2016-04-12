@@ -1,6 +1,9 @@
 # api.io
 Small node.js framework for easily exposing an APIa over websockets to clients. Uses ES6 but there is a requirejs version available for use in a browser, though it still requires a modern web browser which support arrow functions, promises, generators and let.
 
+## Tests
+[![Build Status](https://travis-ci.org/mattiasrunge/api.io.png)](https://travis-ci.org/mattiasrunge/api.io)
+
 ## Usage
 
 ### Expose an API in node.js
