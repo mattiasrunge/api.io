@@ -3,7 +3,7 @@ Small node.js framework for easily exposing an APIa over websockets to clients. 
 
 ## Tests
 [![Build Status](https://travis-ci.org/mattiasrunge/api.io.png)](https://travis-ci.org/mattiasrunge/api.io)
-
+ 
 ## Usage
 
 ### Expose an API in node.js
