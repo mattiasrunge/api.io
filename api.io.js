@@ -55,12 +55,16 @@ module.exports = {
                 for (let namespace of Object.keys(definitions)) {
                     for (let method of Object.keys(definitions[namespace])) {
                         client.on(namespace + "." + method, (data, ack) => {
+                            let clientStack = data.__stack;
+                            delete data.__stack;
+
                             module.exports._call(client.session, namespace, method, data)
                             .then((result) => {
                                 ack(null, result);
                             })
                             .catch((error) => {
                                 console.error("Call to " + namespace + "." + method + " threw: " + error);
+                                console.error("client stack", clientStack);
                                 console.error("data", JSON.stringify(data, null, 2));
                                 console.error(error.stack);
                                 ack(error.stack);
@@ -206,6 +210,8 @@ module.exports = {
         obj.namespace = namespace;
 
         emitter.emit("namespace", namespace);
+
+        module.exports[namespace] = obj;
 
         return obj;
     },

@@ -72,6 +72,9 @@ module.exports = {
         });
     },
     _call: (method, args) => {
+        args = args || {};
+        args.__stack = new Error().stack;
+
         return new Promise((resolve, reject) => {
             if (!connected) {
                 return reject("Not connected");

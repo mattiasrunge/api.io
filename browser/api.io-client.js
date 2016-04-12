@@ -70,6 +70,9 @@ define(["module", "socket.io-client", "co"], function (module, socket, co) {
             });
         },
         _call: (method, args) => {
+            args = args || {};
+            args.__stack = new Error().stack;
+
             return new Promise((resolve, reject) => {
                 if (!connected) {
                     return reject("Not connected");

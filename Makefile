@@ -3,6 +3,8 @@ DEPS := deps
 
 all: test lint style compile
 
+tests: test lint style
+
 deps:
 	npm set progress=false
 	npm install

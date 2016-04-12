@@ -1,6 +1,6 @@
 {
   "name": "api.io",
-  "version": "0.0.17",
+  "version": "0.0.18",
   "description": "Small framework for easily exposing an API over websockets to clients",
   "main": "api.io.js",
   "repository": {
@@ -34,5 +34,8 @@
   },
   "engines": {
     "node": ">= 5.7.0"
+  },
+  "scripts": {
+    "test": "make tests"
   }
 }
