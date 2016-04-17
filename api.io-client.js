@@ -37,10 +37,10 @@ let Client = function() {
 
             io.on("ready", (definitions) => {
                 for (let namespace of Object.keys(definitions)) {
-                    module.exports[namespace] = {};
+                    this[namespace] = {};
 
                     for (let method of Object.keys(definitions[namespace])) {
-                        module.exports[namespace][method] = function() {
+                        this[namespace][method] = function() {
                             let name = namespace + "." + method;
                             let args = Array.from(arguments);
                             let data = {};
@@ -49,11 +49,11 @@ let Client = function() {
                                 data[name] = args.shift();
                             }
 
-                            return module.exports._call(name, data);
-                        };
+                            return this._call(name, data);
+                        }.bind(this);
                     }
 
-                    module.exports[namespace].on = (event, fn) => {
+                    this[namespace].on = (event, fn) => {
                         if (fn.constructor.name === "GeneratorFunction") {
                             fn = co.wrap(fn);
                         }
@@ -62,7 +62,7 @@ let Client = function() {
                         return { event: namespace + "." + event, fn: fn };
                     };
 
-                    module.exports[namespace].off = (subscription) => {
+                    this[namespace].off = (subscription) => {
                         io.removeListener(subscription.event, subscription.fn);
                     };
                 }
@@ -98,10 +98,12 @@ let Client = function() {
             resolve();
         });
     };
+
+    this.create = () => {
+        return new Client();
+    };
 };
 
-Client.create = () => {
-    return new Client();
-};
 
-module.exports = Client.create();
+
+module.exports = new Client();
