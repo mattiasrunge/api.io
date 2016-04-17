@@ -3,12 +3,12 @@
 const socket = require("socket.io-client");
 const co = require("co");
 
-let io = null;
-let params = {};
-let connected = false;
+let Client = function() {
+    let io = null;
+    let params = {};
+    let connected = false;
 
-module.exports = {
-    connect: (config) => {
+    this.connect = (config) => {
         params = config;
 
         return new Promise((resolve, reject) => {
@@ -70,8 +70,9 @@ module.exports = {
                 resolve();
             });
         });
-    },
-    _call: (method, args) => {
+    };
+
+    this._call = (method, args) => {
         args = args || {};
         args.__stack = new Error().stack;
 
@@ -88,12 +89,19 @@ module.exports = {
                 resolve(result);
             });
         });
-    },
-    disconnect: () => {
+    };
+
+    this.disconnect = () => {
         return new Promise((resolve) => {
             io.close();
             connected = false;
             resolve();
         });
-    }
+    };
 };
+
+Client.create = () => {
+    return new Client();
+};
+
+module.exports = Client.create();
