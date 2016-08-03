@@ -43,10 +43,10 @@ module.exports = {
                     }
 
                     if (typeof request.sessionId === "undefined" || !sessions[request.sessionId]) {
-                        let sessionId = uuid.v4();
+                        request.sessionId = uuid.v4();
 
-                        sessions[sessionId] = {
-                            sessionId: sessionId
+                        sessions[request.sessionId] = {
+                            sessionId: request.sessionId
                         };
                     }
                 }
