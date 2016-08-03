@@ -8,8 +8,9 @@ let Client = function() {
     let params = {};
     let connected = false;
 
-    this.connect = (config) => {
+    this.connect = (config, statusFn) => {
         params = config;
+        statusFn = statusFn || function() {};
 
         return new Promise((resolve, reject) => {
             let url = "ws://" + params.hostname + ":" + params.port;
@@ -18,24 +19,38 @@ let Client = function() {
 
             io.on("connect", () => {
                 connected = true;
+                statusFn("connect");
+            });
+
+            io.on("reconnect", () => {
+                connected = true;
+                statusFn("reconnect");
             });
 
             io.on("connect_error", (error) => {
                 connected = false;
                 reject("Error while connecting to " + url + ", " + error);
+                statusFn("error", "Error while connecting to " + url + ", " + error);
             });
 
-            io.on("connect_timeout", () => {
+            io.on("connect_timeout", (error) => {
                 connected = false;
-                reject("Connection timed out while connecting to " + url);
+                reject("Timed out while connecting to " + url);
+                statusFn("timeout", "Timeout while connecting to " + url + ", " + error);
+            });
+
+            io.on("reconnect_failed", (error) => {
+                connected = false;
+                statusFn("error", "Error while reconnecting to " + url + ", " + error);
             });
 
             io.on("disconnect", () => {
                 connected = false;
-                console.error("Disconnected from server...");
+                statusFn("disconnect");
             });
 
             io.on("ready", (definitions) => {
+                // TODO: Check some sort of version, definitions might have changed
                 for (let namespace of Object.keys(definitions)) {
                     this[namespace] = {};
 
@@ -103,7 +118,5 @@ let Client = function() {
         return new Client();
     };
 };
-
-
 
 module.exports = new Client();

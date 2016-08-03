@@ -3,7 +3,7 @@ Small node.js framework for easily exposing an APIa over websockets to clients. 
 
 ## Tests
 [![Build Status](https://travis-ci.org/mattiasrunge/api.io.png)](https://travis-ci.org/mattiasrunge/api.io)
- 
+
 ## Usage
 
 ### Expose an API in node.js
@@ -75,9 +75,18 @@ const co = require("co");
 
 let run = co.wrap(function*() {
     // Connect to the API server via socket.io
-    yield api.start({
+    yield api.connect({
         hostname: "localhost",
         port: 8080
+    }, (status, message) => {
+        if (status === "timeout") {
+            console.error(message);
+            process.exit(255);
+        } else if (status === "disconnect") {
+            console.error("Disconnected from server, will attempt to reconnect...");
+        } else if (status === "reconnect") {
+            console.log("Reconnected to server");
+        }
     });
 
     // Do a function call to the myApi
@@ -120,9 +129,17 @@ require.config({
 define([ "api.io-client", "co" ], (api, co) => {
     let run = co.wrap(function*() {
         // Connect to the API server via socket.io
-        yield api.start({
+        yield api.connect({
             hostname: location.hostname,
             port: 8080
+        }, (status, message) => {
+            if (status === "timeout") {
+                console.error(message);
+            } else if (status === "disconnect") {
+                console.error("Disconnected from server, will attempt to reconnect...");
+            } else if (status === "reconnect") {
+                console.log("Reconnected to server");
+            }
         });
 
         // Do a function call to the myApi
