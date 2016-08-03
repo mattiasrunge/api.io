@@ -1,6 +1,6 @@
 {
   "name": "api.io",
-  "version": "0.0.21",
+  "version": "0.0.22",
   "description": "Small framework for easily exposing an API over websockets to clients",
   "main": "api.io.js",
   "repository": {
@@ -21,7 +21,8 @@
   "dependencies": {
     "co": "4.6.0",
     "cookie": "0.3.1",
-    "socket.io": "1.4.5"
+    "socket.io": "1.4.5",
+    "node-uuid": "1.4.7"
   },
   "devDependencies": {
     "chai": "3.5.0",

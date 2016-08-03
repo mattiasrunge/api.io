@@ -12,8 +12,17 @@ define(["module", "socket.io-client", "co"], function (module, socket, co) {
 
             return new Promise((resolve, reject) => {
                 let url = "ws://" + params.hostname + ":" + params.port;
+                let options = {};
 
-                io = socket(url);
+                if (config.sessionId) {
+                    let cookieValue = new Buffer(JSON.stringify({ sessionId: config.sessionId })).toString("base64");
+
+                    options.extraHeaders = {
+                        cookie: "api.io-authorization=" + cookieValue
+                    };
+                }
+
+                io = socket(url, options);
 
                 io.on("connect", () => {
                     connected = true;

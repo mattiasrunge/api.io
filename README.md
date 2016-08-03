@@ -27,7 +27,7 @@ let run = co.wrap(function*() {
     // This will setup a socket.io connection and it will
     // not work if you try to setup your own socket.io also
     let server = http.Server();
-    yield api.connect(server);
+    yield api.start(server);
     server.listen(8080);
 
     // Subscribe a listener for new clients

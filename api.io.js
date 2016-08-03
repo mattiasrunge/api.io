@@ -4,6 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const socket = require("socket.io");
 const cookie = require("cookie");
+const uuid = require("node-uuid");
 const EventEmitter = require("events");
 const co = require("co");
 const version = require("./package.json").version;
@@ -28,22 +29,30 @@ const getParamNames = (fn) => {
 // Credits: File serving is inspired by how socket.io does it
 module.exports = {
     client: require("./api.io-client"),
-    start: (server, sessionCookieName, sessions) => {
+    start: (server, sessions) => {
         return new Promise((resolve) => {
             module.exports._addRoutes(server);
 
             io = socket(server);
 
-            if (sessionCookieName) {
-                io.set("authorization", function(request, accept) {
-                    if (request.headers.cookie && request.headers.cookie.indexOf(sessionCookieName) !== -1) {
-                        request.sessionCookie = cookie.parse(request.headers.cookie)[sessionCookieName];
+            io.set("authorization", function(request, accept) {
+                if (sessions) {
+                    if (request.headers.cookie && request.headers.cookie.indexOf("api.io-authorization") !== -1) {
+                        request.sessionCookie = cookie.parse(request.headers.cookie)["api.io-authorization"];
                         request.sessionId = JSON.parse(new Buffer(request.sessionCookie, "base64")).sessionId;
                     }
 
-                    accept(null, true);
-                });
-            }
+                    if (typeof request.sessionId === "undefined" || !sessions[request.sessionId]) {
+                        let sessionId = uuid.v4();
+
+                        sessions[sessionId] = {
+                            sessionId: sessionId
+                        };
+                    }
+                }
+
+                accept(null, true);
+            });
 
             io.on("connection", (client) => {
                 if (client.request.sessionId && sessions) {
