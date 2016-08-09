@@ -194,6 +194,10 @@ module.exports = {
         }
 
         obj.emit = function(event, data, sessionFilter) {
+            if (!io) {
+                return;
+            }
+
             if (!sessionFilter || typeof sessionFilter !== "object") {
                 return io.emit(namespace + "." + event, data);
             }
