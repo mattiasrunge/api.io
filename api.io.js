@@ -65,8 +65,9 @@ module.exports = {
                         };
                     }
 
-                    this.session = sessions[sessionId];
-                    this.session._expires = new Date(new Date().getTime() + options.sessionMaxAge);
+                    let session = sessions[sessionId];
+
+                    session._expires = new Date(new Date().getTime() + options.sessionMaxAge);
 
                     request.sessionId = sessionId;
                 }
