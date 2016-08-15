@@ -17,10 +17,13 @@ let Client = function() {
             let options = {};
 
             if (config.sessionId) {
-                let cookieValue = (new Buffer(JSON.stringify({ sessionId: config.sessionId }))).toString("base64");
+                let sessionName = config.sessionName || "api.io-authorization";
+
+                let body = JSON.stringify({ sessionId: config.sessionId });
+                let cookieString = new Buffer(body).toString("base64");
 
                 options.extraHeaders = {
-                    cookie: "api.io-authorization=" + cookieValue
+                    cookie: sessionName + "=" + cookieString
                 };
             }
 

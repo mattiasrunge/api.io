@@ -29,7 +29,9 @@ const getParamNames = (fn) => {
 // Credits: File serving is inspired by how socket.io does it
 module.exports = {
     client: require("./api.io-client"),
-    start: (server, sessions) => {
+    start: (server, options, sessions) => {
+        options = options || {};
+
         return new Promise((resolve) => {
             module.exports._addRoutes(server);
 
@@ -37,18 +39,36 @@ module.exports = {
 
             io.set("authorization", function(request, accept) {
                 if (sessions) {
-                    if (request.headers.cookie && request.headers.cookie.indexOf("api.io-authorization") !== -1) {
-                        request.sessionCookie = cookie.parse(request.headers.cookie)["api.io-authorization"];
-                        request.sessionId = JSON.parse(new Buffer(request.sessionCookie, "base64")).sessionId;
+                    options.sessionName = options.sessionName || "api.io-authorization";
+                    options.sessionMaxAge = options.sessionMaxAge || 1000 * 60 * 60 * 24 * 7;
+
+                    let sessionId = false;
+
+                    if (request.headers.cookie && request.headers.cookie.indexOf(options.sessionName) !== -1) {
+                        try {
+                            let cookieString = cookie.parse(request.headers.cookie)[options.sessionName];
+                            let body = new Buffer(cookieString, "base64").toString("utf8");
+                            let cookieData = JSON.parse(body);
+
+                            if (cookieData && cookieData.sessionId) {
+                                sessionId = cookieData.sessionId;
+                            }
+                        } catch (e) {
+                        }
                     }
 
-                    if (typeof request.sessionId === "undefined" || !sessions[request.sessionId]) {
-                        request.sessionId = uuid.v4();
+                    if (!sessionId || !sessions[sessionId]) {
+                        sessionId = uuid.v4();
 
-                        sessions[request.sessionId] = {
-                            sessionId: request.sessionId
+                        sessions[sessionId] = {
+                            _id: sessionId
                         };
                     }
+
+                    this.session = sessions[sessionId];
+                    this.session._expires = new Date(new Date().getTime() + options.sessionMaxAge);
+
+                    request.sessionId = sessionId;
                 }
 
                 accept(null, true);
