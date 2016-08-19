@@ -132,7 +132,11 @@ module.exports = {
             throw new Error("No such method");
         }
 
-        let args = definitions[namespace][method].map((name) => data[name]);
+        if (definitions[namespace][method].type !== "function") {
+            throw new Error("Call on non-function");
+        }
+
+        let args = definitions[namespace][method].value.map((name) => data[name]);
         args.unshift(session);
 
         return objects[namespace][method].apply(objects[namespace], args);
@@ -205,13 +209,17 @@ module.exports = {
         objects[namespace] = obj;
 
         for (let name of Object.keys(obj)) {
-            if (name[0] === "_" || obj[name].constructor.name !== "GeneratorFunction") {
+            if (name[0] === "_" || obj[name].constructor.name === "Function") {
                 continue;
-            }
+            } else if (obj[name].constructor.name === "GeneratorFunction") {
+                let params = getParamNames(obj[name]);
+                params.shift(); // Remove session
 
-            definitions[namespace][name] = getParamNames(obj[name]);
-            definitions[namespace][name].shift(); // Remove session
-            obj[name] = co.wrap(obj[name]);
+                definitions[namespace][name] = { type: "function", value: params };
+                obj[name] = co.wrap(obj[name]);
+            } else {
+                definitions[namespace][name] = { type: "constant", value: obj[name] };
+            }
         }
 
         obj.emit = function(event, data, sessionFilter) {

@@ -57,6 +57,10 @@ describe("Test", function() {
             });
         });
 
+        it("should successfully get a constant value", function*() {
+            assert.equal(api.myApi.VALUE, "const");
+        });
+
         it("should successfully call a api function", function*() {
             let result = yield api.myApi.sum(1, 2);
 

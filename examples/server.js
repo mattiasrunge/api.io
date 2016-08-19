@@ -6,6 +6,7 @@ const co = require("co");
 
 // Registers the api with the name myAapi
 let myApi = api.register("myApi", {
+    VALUE: "const",
     notApi: () => {
         // Only generator functions will be included in the exposed API
     },

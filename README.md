@@ -14,6 +14,7 @@ const co = require("co");
 
 // Registers the api with the name myAapi
 let myApi = api.register("myApi", {
+    CONST_VALUE: 1,
     notApi: () => {
         // Only generator functions will be included in the exposed API
     },
@@ -89,6 +90,9 @@ let run = co.wrap(function*() {
         }
     });
 
+    console.log(api.myApi.CONST_VALUE);
+    // => 1
+
     // Do a function call to the myApi
     let result = yield api.myApi.sum(1, 2);
     // result === 3
@@ -141,6 +145,9 @@ define([ "api.io-client", "co" ], (api, co) => {
                 console.log("Reconnected to server");
             }
         });
+
+        console.log(api.myApi.CONST_VALUE);
+        // => 1
 
         // Do a function call to the myApi
         let result = yield api.myApi.sum(1, 2);

@@ -66,18 +66,28 @@ let Client = function() {
                 for (let namespace of Object.keys(definitions)) {
                     this[namespace] = {};
 
-                    for (let method of Object.keys(definitions[namespace])) {
-                        this[namespace][method] = function() {
-                            let name = namespace + "." + method;
-                            let args = Array.from(arguments);
-                            let data = {};
+                    for (let itemName of Object.keys(definitions[namespace])) {
+                        let item = definitions[namespace][itemName];
 
-                            for (let name of definitions[namespace][method]) {
-                                data[name] = args.shift();
-                            }
+                        if (item.type === "function") {
+                            let method = namespace + "." + itemName;
+                            let argNames = item.value;
 
-                            return this._call(name, data);
-                        }.bind(this);
+                            this[namespace][itemName] = function() {
+                                let args = Array.from(arguments);
+                                let data = {};
+
+                                for (let name of argNames) {
+                                    data[name] = args.shift();
+                                }
+
+                                return this._call(method, data);
+                            }.bind(this);
+                        } else if (item.type === "constant") {
+                            this[namespace][itemName] = item.value;
+                        } else {
+                            throw new Error("Unknown item type: " + item.type);
+                        }
                     }
 
                     this[namespace].on = (event, fn) => {
