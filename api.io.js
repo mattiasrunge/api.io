@@ -103,13 +103,13 @@ module.exports = {
                     }
                 }
 
+                client.on("disconnect", () => {
+                    emitter.emit("disconnection", client);
+                });
+
                 emitter.emit("connection", client);
 
                 client.emit("ready", definitions);
-            });
-
-            io.on("disconnection", (client) => {
-                emitter.emit("disconnection", client);
             });
 
             resolve();
