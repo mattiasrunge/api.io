@@ -262,7 +262,8 @@ module.exports = {
     },
     on: (event, fn) => {
         if (fn.constructor.name === "GeneratorFunction") {
-            fn = co.wrap(fn);
+            let fn2 = fn;
+            fn = co.wrap(fn2);
         }
 
         emitter.on(event, fn);
