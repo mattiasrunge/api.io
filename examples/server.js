@@ -34,7 +34,7 @@ let run = co.wrap(function*(port) {
     connectionSubscription = api.on("connection", function*(client) {
         // Do something with client
         // client.session is available
-        // Both generator functions and ordinary functions ar supported
+        // Both generator functions and ordinary functions are supported
 
         client.session.username = "guest";
     });
@@ -43,7 +43,7 @@ let run = co.wrap(function*(port) {
     disconnectionSubscription = api.on("disconnection", (client) => {
         // Do something with client
         // client.session is available
-        // Both generator functions and ordinary functions ar supported
+        // Both generator functions and ordinary functions are supported
     });
 
     // Emit event1 to all clients in the myApi namespace

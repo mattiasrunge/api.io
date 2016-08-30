@@ -17,13 +17,13 @@ let run = co.wrap(function*() {
     // Subscribe to myApi event1
     let subscription1 = api.myApi.on("event1", function*(data) {
         // data === "Hello World"
-        // Both generator functions and ordinary functions ar supported
+        // Both generator functions and ordinary functions are supported
     });
 
     // Subscribe to myApi event2
     let subscription2 = api.myApi.on("event2", function(data) {
         // data === "Hello World"
-        // Both generator functions and ordinary functions ar supported
+        // Both generator functions and ordinary functions are supported
     });
 
     // Unsubscribe from events
