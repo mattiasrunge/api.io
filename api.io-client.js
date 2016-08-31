@@ -95,12 +95,23 @@ let Client = function() {
                             fn = co.wrap(fn);
                         }
 
-                        io.on(namespace + "." + event, fn);
-                        return { event: namespace + "." + event, fn: fn };
+                        let events = event.split("|");
+
+                        for (let event of events) {
+                            io.on(namespace + "." + event, fn);
+                        }
+
+                        return { events: events, namespace: namespace, fn: fn };
                     };
 
                     this[namespace].off = (subscription) => {
-                        io.removeListener(subscription.event, subscription.fn);
+                        let subscriptions = subscription instanceof Array ? subscription : [ subscription ];
+
+                        for (let subscription of subscriptions) {
+                            for (let event of subscription.events) {
+                                io.removeListener(subscription.namespace + "." + event, subscription.fn);
+                            }
+                        }
                     };
                 }
 
