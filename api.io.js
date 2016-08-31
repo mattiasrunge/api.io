@@ -266,10 +266,21 @@ module.exports = {
             fn = co.wrap(fn2);
         }
 
-        emitter.on(event, fn);
-        return { event: event, fn: fn };
+        let events = event.split("|");
+
+        for (let event of events) {
+            emitter.on(event, fn);
+        }
+
+        return { events: events, fn: fn };
     },
     off: (subscription) => {
-        emitter.removeListener(subscription.event, subscription.fn);
+        let subscriptions = subscription instanceof Array ? subscription : [ subscription ];
+
+        for (let subscription of subscriptions) {
+            for (let event of subscription.events) {
+                emitter.removeListener(event, subscription.fn);
+            }
+        }
     }
 };
