@@ -13,7 +13,8 @@ let Client = function() {
         statusFn = statusFn || function() {};
 
         return new Promise((resolve, reject) => {
-            let url = "ws://" + params.hostname + ":" + params.port;
+            let protocol = params.secure ? "ws" : "wss";
+            let url = protocol + "://" + params.hostname + ":" + params.port;
             let options = {
                 secure: params.secure
             };
