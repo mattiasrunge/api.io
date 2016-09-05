@@ -11,7 +11,8 @@ define(["module", "socket.io-client", "co"], function (module, socket, co) {
             statusFn = statusFn || function () {};
 
             return new Promise((resolve, reject) => {
-                let url = "ws://" + params.hostname + ":" + params.port;
+                let protocol = params.secure ? "wss" : "ws";
+                let url = protocol + "://" + params.hostname + ":" + params.port;
                 let options = {
                     secure: params.secure
                 };
