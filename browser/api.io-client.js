@@ -12,7 +12,9 @@ define(["module", "socket.io-client", "co"], function (module, socket, co) {
 
             return new Promise((resolve, reject) => {
                 let url = "ws://" + params.hostname + ":" + params.port;
-                let options = {};
+                let options = {
+                    secure: params.secure
+                };
 
                 if (config.sessionId) {
                     let sessionName = config.sessionName || "api.io-authorization";
