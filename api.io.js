@@ -39,20 +39,14 @@ module.exports = {
 
             io.set("authorization", function(request, accept) {
                 if (sessions) {
-                    options.sessionName = options.sessionName || "api.io-authorization";
+                    options.sessionName = options.sessionName || "apiio";
                     options.sessionMaxAge = options.sessionMaxAge || 1000 * 60 * 60 * 24 * 7;
 
                     let sessionId = false;
 
                     if (request.headers.cookie && request.headers.cookie.indexOf(options.sessionName) !== -1) {
                         try {
-                            let cookieString = cookie.parse(request.headers.cookie)[options.sessionName];
-                            let body = new Buffer(cookieString, "base64").toString("utf8");
-                            let cookieData = JSON.parse(body);
-
-                            if (cookieData && cookieData.sessionId) {
-                                sessionId = cookieData.sessionId;
-                            }
+                            sessionId = cookie.parse(request.headers.cookie)[options.sessionName];
                         } catch (e) {
                         }
                     }

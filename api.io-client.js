@@ -20,13 +20,10 @@ let Client = function() {
             };
 
             if (config.sessionId) {
-                let sessionName = config.sessionName || "api.io-authorization";
-
-                let body = JSON.stringify({ sessionId: config.sessionId });
-                let cookieString = new Buffer(body).toString("base64");
+                let sessionName = config.sessionName || "apiio";
 
                 options.extraHeaders = {
-                    cookie: sessionName + "=" + cookieString
+                    cookie: sessionName + "=" + config.sessionId
                 };
             }
 
