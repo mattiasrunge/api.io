@@ -1,6 +1,6 @@
 {
   "name": "api.io",
-  "version": "0.2.9",
+  "version": "0.2.10",
   "description": "Small framework for easily exposing an API over websockets to clients",
   "main": "api.io.js",
   "repository": {
@@ -13,7 +13,7 @@
     "promise"
   ],
   "author": "Mattias Runge <mattias@runge.se>",
-  "license": "GPL-2.0",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/mattiasrunge/api.io/issues"
   },
