@@ -10,9 +10,13 @@ let run = co.wrap(function*() {
         port: 8080
     });
 
-    // Do a function call to the myApi
+    // Do a function call to a myApi server-side function
     let result = yield api.myApi.sum(1, 2);
     // result === 3
+
+    // Do a function call to a myApi server-side generator function
+    let result2 = yield api.myApi.sumGen(1, 3);
+    // result2 === 4
 
     // Subscribe to myApi event1
     let subscription1 = api.myApi.on("event1", function*(data) {

@@ -16,11 +16,19 @@ const co = require("co");
 let myApi = api.register("myApi", {
     CONST_VALUE: 1,
     notApi: () => {
-        // Only generator functions will be included in the exposed API
+        // Only exported functions will be included in the exposed API
     },
-    sum: function*(session, a, b) {
+    notApiGen: function*() {
+        // Only exported generator functions will be included in the exposed API
+    },
+    sum: api.export((session, a, b) => {
+        // Exported function included in the exposed API
         return a + b;
-    }
+    }),
+    sumGen: api.export(function*(session, a, b) {
+        // Exported generator function included in the exposed API
+        return a + b;
+    })
 });
 
 let run = co.wrap(function*() {
@@ -93,9 +101,13 @@ let run = co.wrap(function*() {
     console.log(api.myApi.CONST_VALUE);
     // => 1
 
-    // Do a function call to the myApi
+    // Do a function call to a myApi server-side function
     let result = yield api.myApi.sum(1, 2);
     // result === 3
+
+    // Do a function call to a myApi server-side generator function
+    let result2 = yield api.myApi.sumGen(1, 3);
+    // result2 === 4
 
     // Subscribe to myApi event1
     let subscription1 = api.myApi.on("event1", function*(data) {
@@ -149,9 +161,13 @@ define([ "api.io-client", "co" ], (api, co) => {
         console.log(api.myApi.CONST_VALUE);
         // => 1
 
-        // Do a function call to the myApi
+        // Do a function call to a myApi server-side function
         let result = yield api.myApi.sum(1, 2);
         // result === 3
+
+        // Do a function call to a myApi server-side generator function
+        let result2 = yield api.myApi.sumGen(1, 3);
+        // result2 === 4
 
         // Subscribe to myApi event1
         let subscription1 = api.myApi.on("event1", function*(data) {

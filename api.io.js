@@ -15,6 +15,8 @@ let objects = {};
 let emitter = new EventEmitter();
 let files = {};
 
+const EXPORT_PROP_NAME = "__exported";
+
 // Credits: http://stackoverflow.com/questions/30030161/javascript-function-arguments-positional-map-transition
 const getParamNames = (fn) => {
     const STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
@@ -133,7 +135,7 @@ module.exports = {
         let args = definitions[namespace][method].value.map((name) => data[name]);
         args.unshift(session);
 
-        return objects[namespace][method].apply(objects[namespace], args);
+        return Promise.resolve(objects[namespace][method].apply(objects[namespace], args));
     },
     _addRoutes: (server) => {
         let listeners = server.listeners("request").slice(0);
@@ -203,15 +205,24 @@ module.exports = {
         objects[namespace] = obj;
 
         for (let name of Object.keys(obj)) {
-            if (name[0] === "_" || obj[name].constructor.name === "Function") {
+            if (name[0] === "_") {
+                // Private parameter
                 continue;
-            } else if (obj[name].constructor.name === "GeneratorFunction") {
+            } else if (module.exports._isExported(obj[name])) {
                 let params = getParamNames(obj[name]);
                 params.shift(); // Remove session
 
                 definitions[namespace][name] = { type: "function", value: params };
-                obj[name] = co.wrap(obj[name]);
+                // Wrap generator functions
+                if (obj[name].constructor.name === "GeneratorFunction") {
+                    obj[name] = co.wrap(obj[name]);
+                }
+            } else if (obj[name].constructor.name === "Function" ||
+                obj[name].constructor.name === "GeneratorFunction") {
+                // non-exported function or generator function, skip it
+                continue;
             } else {
+                // Everything else is an exported constant
                 definitions[namespace][name] = { type: "constant", value: obj[name] };
             }
         }
@@ -253,6 +264,17 @@ module.exports = {
     },
     isRegistered: (namespace) => {
         return !!definitions[namespace];
+    },
+    export: (func) => {
+        // TODO: Add export for denotation for others than functions, need to wrap simple types
+        if (typeof func === "function") {
+            func[EXPORT_PROP_NAME] = true;
+        }
+
+        return func;
+    },
+    _isExported: (func) => {
+        return (typeof func === "function") && (func[EXPORT_PROP_NAME] === true);
     },
     on: (event, fn) => {
         if (fn.constructor.name === "GeneratorFunction") {

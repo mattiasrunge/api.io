@@ -8,14 +8,23 @@ const co = require("co");
 let myApi = api.register("myApi", {
     VALUE: "const",
     notApi: () => {
-        // Only generator functions will be included in the exposed API
+        // Only exported functions will be included in the exposed API
     },
-    sum: function*(session, a, b) {
+    notApi2: function*() {
+        // Only exported generator functions will be included in the exposed API
+    },
+    sum: api.export((session, a, b) => {
+        // Exported function included in the exposed API
         return a + b;
-    },
-    send: function*(session) {
+    }),
+    sumGen: api.export(function*(session, a, b) {
+        // Exported generator function included in the exposed API
+        return a + b;
+    }),
+    send: api.export(function*(session) {
+        // Exported generator function included in the exposed API
         this.emit("event3", "ABC");
-    }
+    })
 });
 
 let connectionSubscription;

@@ -61,10 +61,16 @@ describe("Test", function() {
             assert.equal(api.myApi.VALUE, "const");
         });
 
-        it("should successfully call a api function", function*() {
+        it("should successfully call an exported api function", function*() {
             let result = yield api.myApi.sum(1, 2);
 
             assert.equal(result, 3);
+        });
+
+        it("should successfully call an exported api generator function", function*() {
+            let result = yield api.myApi.sumGen(1, 3);
+
+            assert.equal(result, 4);
         });
 
         it("should successfully get an event", function*() {
@@ -75,6 +81,11 @@ describe("Test", function() {
             yield api.myApi.send();
 
             api.myApi.off(subscription1);
+        });
+
+        it("should not expose not-exported functions", function*() {
+            assert.notProperty(api.myApi, "notApi");
+            assert.notProperty(api.myApi, "notApi2");
         });
     });
 });
