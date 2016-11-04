@@ -90,7 +90,7 @@ let Client = function() {
                         }
                     }
 
-                    this[namespace].on = (event, fn) => {
+                    this[namespace].on = function(ns, event, fn) {
                         if (fn.constructor.name === "GeneratorFunction") {
                             fn = co.wrap(fn);
                         }
@@ -98,11 +98,11 @@ let Client = function() {
                         let events = event.split("|");
 
                         for (let event of events) {
-                            io.on(namespace + "." + event, fn);
+                            io.on(ns + "." + event, fn);
                         }
 
-                        return { events: events, namespace: namespace, fn: fn };
-                    };
+                        return { events: events, namespace: ns, fn: fn };
+                    }.bind(this, namespace);
 
                     this[namespace].off = (subscription) => {
                         let subscriptions = subscription instanceof Array ? subscription : [ subscription ];
