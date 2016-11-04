@@ -87,5 +87,15 @@ describe("Test", function() {
             assert.notProperty(api.myApi, "notApi");
             assert.notProperty(api.myApi, "notApi2");
         });
+
+        it("should successfully interact with second API", function*() {
+            let subscription1 = api.myApi.on("eventX", function*(data) {
+                assert.equal(data, "Over myApi2");
+            });
+
+            yield api.myApi2.send();
+
+            api.myApi.off(subscription1);
+        });
     });
 });

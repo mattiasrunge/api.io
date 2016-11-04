@@ -4,7 +4,7 @@ const http = require("http");
 const api = require("../api.io");
 const co = require("co");
 
-// Registers the api with the name myAapi
+// Registers the api with the name myApi
 let myApi = api.register("myApi", {
     VALUE: "const",
     notApi: () => {
@@ -24,6 +24,14 @@ let myApi = api.register("myApi", {
     send: api.export(function*(session) {
         // Exported generator function included in the exposed API
         this.emit("event3", "ABC");
+    })
+});
+
+// Registers the api with the name myApi2
+let myApi2 = api.register("myApi2", {
+    send: api.export(function*(session) {
+        // Exported generator function included in the exposed API
+        this.emit("eventX", "Over myApi2");
     })
 });
 
