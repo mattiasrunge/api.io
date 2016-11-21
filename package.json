@@ -1,6 +1,6 @@
 {
   "name": "api.io",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Small framework for easily exposing an API over websockets to clients",
   "main": "api.io.js",
   "repository": {
@@ -10,7 +10,8 @@
   "keywords": [
     "api",
     "ws",
-    "promise"
+    "promise",
+    "async"
   ],
   "author": "Mattias Runge <mattias@runge.se>",
   "license": "MIT",
@@ -19,24 +20,25 @@
   },
   "homepage": "https://github.com/mattiasrunge/api.io#readme",
   "dependencies": {
-    "co": "4.6.0",
     "cookie": "0.3.1",
-    "socket.io": "1.4.8",
-    "node-uuid": "1.4.7"
+    "socket.io": "1.6.0",
+    "uuid": "3.0.0"
   },
   "devDependencies": {
     "chai": "3.5.0",
     "get-port": "2.1.0",
-    "mocha": "3.0.2",
-    "jshint": "2.9.3",
-    "jscs": "3.0.7",
-    "babel-cli": "6.14.0",
-    "babel-plugin-transform-es2015-modules-amd": "6.8.0"
+    "mocha": "3.1.2",
+    "babel-eslint": "7.0.0",
+    "eslint": "3.7.0",
+    "babel-cli": "6.18.0",
+    "babel-plugin-transform-es2015-modules-amd": "6.18.0"
   },
   "engines": {
-    "node": ">= 5.7.0"
+    "node": ">= 7.0.0"
   },
   "scripts": {
-    "test": "make tests"
+    "compile": "mkdir -p browser && babel api.io-client.js --plugins transform-es2015-modules-amd --out-file browser/api.io-client.js",
+    "test": "mocha --harmony_async_await --recursive && npm run lint",
+    "lint": "eslint api.io-client.js api.io.js"
   }
 }

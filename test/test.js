@@ -1,99 +1,93 @@
 "use strict";
 
-const mocha = require("mocha");
-const co = require("co");
+/* global describe before after it */
+
 const assert = require("chai").assert;
 const server = require("../examples/server");
 const api = require("../api.io-client");
 const getPort = require("get-port");
 
-// Create mocha-functions which deals with generators
-function mochaGen(originalFn) {
-    return (text, fn) => {
-        fn = typeof text === "function" ? text : fn;
+const createDeferred = () => {
+    const deferred = {};
+    deferred.promise = new Promise((resolve, reject) => {
+        deferred.resolve = resolve;
+        deferred.reject = reject;
+    });
 
-        if (fn.constructor.name === "GeneratorFunction") {
-            let oldFn = fn;
-            fn = (done) => {
-                co.wrap(oldFn)()
-                .then(done)
-                .catch(done);
-            };
-        }
+    return deferred;
+};
 
-        if (typeof text === "function") {
-            originalFn(fn);
-        } else {
-            originalFn(text, fn);
-        }
-    };
-}
-
-// Override mocha, we get W020 lint warning which we ignore since it works...
-it = mochaGen(mocha.it); // jshint ignore:line
-before = mochaGen(mocha.before); // jshint ignore:line
-after = mochaGen(mocha.after); // jshint ignore:line
-
-describe("Test", function() {
-    this.timeout(10000);
-
+describe("Test", () => {
     let port = 8080;
 
-    before(function*() {
-        port = yield getPort();
+    before(async () => {
+        port = await getPort();
 
-        yield server.run(port);
+        await server.run(port);
     });
 
-    after(function*() {
-        yield server.stop();
+    after(async () => {
+        await server.stop();
     });
 
-    describe("Client", function() {
-        it("should connect", function*() {
-            yield api.connect({
+    describe("Client", () => {
+        it("should connect", async () => {
+            await api.connect({
                 hostname: "localhost",
                 port: port
             });
         });
 
-        it("should successfully get a constant value", function*() {
+        it("should successfully get a constant value", () => {
             assert.equal(api.myApi.VALUE, "const");
         });
 
-        it("should successfully call an exported api function", function*() {
-            let result = yield api.myApi.sum(1, 2);
+        it("should successfully call an exported api function", async () => {
+            const result = await api.myApi.sum(1, 2);
 
             assert.equal(result, 3);
         });
 
-        it("should successfully call an exported api generator function", function*() {
-            let result = yield api.myApi.sumGen(1, 3);
+        it("should successfully call an exported api generator function", async () => {
+            const result = await api.myApi.sumAsync(1, 3);
 
             assert.equal(result, 4);
         });
 
-        it("should successfully get an event", function*() {
-            let subscription1 = api.myApi.on("event3", function*(data) {
-                assert.equal(data, "ABC");
+        it("should successfully get an event", async () => {
+            const deferred = createDeferred();
+            const subscription1 = api.myApi.on("event3", (data) => {
+                try {
+                    assert.equal(data, "ABC");
+                    deferred.resolve();
+                } catch (error) {
+                    deferred.reject(error);
+                }
             });
 
-            yield api.myApi.send();
+            await api.myApi.send();
+            await deferred.promise;
 
             api.myApi.off(subscription1);
         });
 
-        it("should not expose not-exported functions", function*() {
+        it("should not expose not-exported functions", () => {
             assert.notProperty(api.myApi, "notApi");
-            assert.notProperty(api.myApi, "notApi2");
         });
 
-        it("should successfully interact with second API", function*() {
-            let subscription1 = api.myApi.on("eventX", function*(data) {
-                assert.equal(data, "Over myApi2");
+        it("should successfully interact with second API", async () => {
+            const deferred = createDeferred();
+            const subscription1 = api.myApi2.on("eventX", (data) => {
+                try {
+                    assert.equal(data, "Over myApi2");
+                    deferred.resolve();
+                } catch (error) {
+                    deferred.reject(error);
+                }
             });
 
-            yield api.myApi2.send();
+            await api.myApi2.send();
+            await deferred.promise;
 
             api.myApi.off(subscription1);
         });

@@ -2,36 +2,32 @@
 
 const http = require("http");
 const api = require("../api.io");
-const co = require("co");
 
 // Registers the api with the name myApi
-let myApi = api.register("myApi", {
+const myApi = api.register("myApi", {
     VALUE: "const",
     notApi: () => {
         // Only exported functions will be included in the exposed API
-    },
-    notApi2: function*() {
-        // Only exported generator functions will be included in the exposed API
     },
     sum: api.export((session, a, b) => {
         // Exported function included in the exposed API
         return a + b;
     }),
-    sumGen: api.export(function*(session, a, b) {
-        // Exported generator function included in the exposed API
+    sumAsync: api.export(async (session, a, b) => {
+        // Exported async function included in the exposed API
         return a + b;
     }),
-    send: api.export(function*(session) {
-        // Exported generator function included in the exposed API
-        this.emit("event3", "ABC");
+    send: api.export((session) => {
+        // Exported function included in the exposed API
+        myApi.emit("event3", "ABC");
     })
 });
 
 // Registers the api with the name myApi2
-let myApi2 = api.register("myApi2", {
-    send: api.export(function*(session) {
+const myApi2 = api.register("myApi2", {
+    send: api.export(async (session) => {
         // Exported generator function included in the exposed API
-        this.emit("eventX", "Over myApi2");
+        myApi2.emit("eventX", "Over myApi2");
     })
 });
 
@@ -39,16 +35,16 @@ let connectionSubscription;
 let disconnectionSubscription;
 let server;
 
-let run = co.wrap(function*(port) {
+const run = async (port) => {
     // Start a HTTP server and connect the API to it
     // This will setup a socket.io connection and it will
     // not work if you try to setup your own socket.io also
-    server = http.Server();
-    yield api.start(server);
+    server = new http.Server();
+    await api.start(server);
     server.listen(port);
 
     // Subscribe a listener for new clients
-    connectionSubscription = api.on("connection", function*(client) {
+    connectionSubscription = api.on("connection", async (client) => {
         // Do something with client
         // client.session is available
         // Both generator functions and ordinary functions are supported
@@ -68,20 +64,20 @@ let run = co.wrap(function*(port) {
 
     // Emit event2 to client in the myApi namespace that have a session with username = "guest"
     myApi.emit("event2", "Hello World!", { username: "guest" });
-});
+};
 
-let stop = co.wrap(function*() {
+const stop = async () => {
     // Unsubscribe listeners from new or lost client events
     api.off(connectionSubscription);
     api.off(disconnectionSubscription);
 
     // Shut down the socket.io connection
-    yield api.stop();
+    await api.stop();
 
     // Close the HTTP server
     // Don't forget to close active clients (server-destroy is a good helper for this)
     server.close();
-});
+};
 
 module.exports = {
     run: run,

@@ -1,7 +1,7 @@
-define(["module", "socket.io-client", "co"], function (module, socket, co) {
+define(["module", "socket.io-client"], function (module, socket) {
     "use strict";
 
-    let Client = function () {
+    const Client = function () {
         let io = null;
         let params = {};
         let connected = false;
@@ -11,17 +11,17 @@ define(["module", "socket.io-client", "co"], function (module, socket, co) {
             statusFn = statusFn || function () {};
 
             return new Promise((resolve, reject) => {
-                let protocol = params.secure ? "wss" : "ws";
-                let url = protocol + "://" + params.hostname + ":" + params.port;
-                let options = {
+                const protocol = params.secure ? "wss" : "ws";
+                const url = `${ protocol }://${ params.hostname }:${ params.port }`;
+                const options = {
                     secure: params.secure
                 };
 
                 if (config.sessionId) {
-                    let sessionName = config.sessionName || "apiio";
+                    const sessionName = config.sessionName || "apiio";
 
                     options.extraHeaders = {
-                        cookie: sessionName + "=" + config.sessionId
+                        cookie: `${ sessionName }=${ config.sessionId }`
                     };
                 }
 
@@ -39,19 +39,22 @@ define(["module", "socket.io-client", "co"], function (module, socket, co) {
 
                 io.on("connect_error", error => {
                     connected = false;
-                    reject("Error while connecting to " + url + ", " + error);
-                    statusFn("error", "Error while connecting to " + url + ", " + error);
+                    const errorString = `Error while connecting to ${ url }, ${ error }`;
+                    reject(errorString);
+                    statusFn("error", errorString);
                 });
 
                 io.on("connect_timeout", error => {
                     connected = false;
-                    reject("Timed out while connecting to " + url);
-                    statusFn("timeout", "Timeout while connecting to " + url + ", " + error);
+                    const errorString = `Timed out while connecting to ${ url }, ${ error }`;
+                    reject(errorString);
+                    statusFn("timeout", errorString);
                 });
 
                 io.on("reconnect_failed", error => {
                     connected = false;
-                    statusFn("error", "Error while reconnecting to " + url + ", " + error);
+                    const errorString = `Error while reconnecting to ${ url }, ${ error }`;
+                    statusFn("error", errorString);
                 });
 
                 io.on("disconnect", () => {
@@ -61,21 +64,20 @@ define(["module", "socket.io-client", "co"], function (module, socket, co) {
 
                 io.on("ready", definitions => {
                     // TODO: Check some sort of version, definitions might have changed
-                    for (let namespace of Object.keys(definitions)) {
+                    for (const namespace of Object.keys(definitions)) {
                         this[namespace] = {};
 
-                        for (let itemName of Object.keys(definitions[namespace])) {
-                            let item = definitions[namespace][itemName];
+                        for (const itemName of Object.keys(definitions[namespace])) {
+                            const item = definitions[namespace][itemName];
 
                             if (item.type === "function") {
-                                let method = namespace + "." + itemName;
-                                let argNames = item.value;
+                                const method = `${ namespace }.${ itemName }`;
+                                const argNames = item.value;
 
-                                this[namespace][itemName] = function () {
-                                    let args = Array.from(arguments);
-                                    let data = {};
+                                this[namespace][itemName] = function (...args) {
+                                    const data = {};
 
-                                    for (let name of argNames) {
+                                    for (const name of argNames) {
                                         data[name] = args.shift();
                                     }
 
@@ -84,30 +86,32 @@ define(["module", "socket.io-client", "co"], function (module, socket, co) {
                             } else if (item.type === "constant") {
                                 this[namespace][itemName] = item.value;
                             } else {
-                                throw new Error("Unknown item type: " + item.type);
+                                throw new Error(`Unknown item type: ${ item.type }`);
                             }
                         }
 
                         this[namespace].on = function (ns, event, fn) {
-                            if (fn.constructor.name === "GeneratorFunction") {
-                                fn = co.wrap(fn);
-                            }
+                            const events = event.split("|");
 
-                            let events = event.split("|");
+                            for (const event of events) {
+                                const nsevent = `${ ns }.${ event }`;
 
-                            for (let event of events) {
-                                io.on(ns + "." + event, fn);
+                                io.emit("_subscribeToEvent", nsevent);
+                                io.on(nsevent, fn);
                             }
 
                             return { events: events, namespace: ns, fn: fn };
                         }.bind(this, namespace);
 
                         this[namespace].off = subscription => {
-                            let subscriptions = subscription instanceof Array ? subscription : [subscription];
+                            const subscriptions = subscription instanceof Array ? subscription : [subscription];
 
-                            for (let subscription of subscriptions) {
-                                for (let event of subscription.events) {
-                                    io.removeListener(subscription.namespace + "." + event, subscription.fn);
+                            for (const subscription of subscriptions) {
+                                for (const event of subscription.events) {
+                                    const nsevent = `${ subscription.namespace }.${ event }`;
+
+                                    io.removeListener(nsevent, subscription.fn);
+                                    io.emit("_unsubscribeFromEvent", nsevent);
                                 }
                             }
                         };

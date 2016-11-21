@@ -8,39 +8,53 @@ Small node.js framework for easily exposing an APIa over websockets to clients. 
 
 ### Expose an API in node.js
 ```js
-const http = require("http");
-const api = require("api.io");
-const co = require("co");
+"use strict";
 
-// Registers the api with the name myAapi
-let myApi = api.register("myApi", {
-    CONST_VALUE: 1,
+const http = require("http");
+const api = require("../api.io");
+
+// Registers the api with the name myApi
+const myApi = api.register("myApi", {
+    VALUE: "const",
     notApi: () => {
         // Only exported functions will be included in the exposed API
-    },
-    notApiGen: function*() {
-        // Only exported generator functions will be included in the exposed API
     },
     sum: api.export((session, a, b) => {
         // Exported function included in the exposed API
         return a + b;
     }),
-    sumGen: api.export(function*(session, a, b) {
-        // Exported generator function included in the exposed API
+    sumAsync: api.export(async (session, a, b) => {
+        // Exported async function included in the exposed API
         return a + b;
+    }),
+    send: api.export((session) => {
+        // Exported function included in the exposed API
+        myApi.emit("event3", "ABC");
     })
 });
 
-let run = co.wrap(function*() {
+// Registers the api with the name myApi2
+const myApi2 = api.register("myApi2", {
+    send: api.export(async (session) => {
+        // Exported generator function included in the exposed API
+        myApi2.emit("eventX", "Over myApi2");
+    })
+});
+
+let connectionSubscription;
+let disconnectionSubscription;
+let server;
+
+const run = async (port) => {
     // Start a HTTP server and connect the API to it
     // This will setup a socket.io connection and it will
     // not work if you try to setup your own socket.io also
-    let server = http.Server();
-    yield api.start(server);
-    server.listen(8080);
+    server = new http.Server();
+    await api.start(server);
+    server.listen(port);
 
     // Subscribe a listener for new clients
-    let connectionSubscription = api.on("connection", function*(client) {
+    connectionSubscription = api.on("connection", async (client) => {
         // Do something with client
         // client.session is available
         // Both generator functions and ordinary functions are supported
@@ -49,7 +63,7 @@ let run = co.wrap(function*() {
     });
 
     // Subscribe a listener for lost clients
-    let disconnectionSubscription = api.on("disconnection", (client) => {
+    disconnectionSubscription = api.on("disconnection", (client) => {
         // Do something with client
         // client.session is available
         // Both generator functions and ordinary functions are supported
@@ -60,31 +74,36 @@ let run = co.wrap(function*() {
 
     // Emit event2 to client in the myApi namespace that have a session with username = "guest"
     myApi.emit("event2", "Hello World!", { username: "guest" });
+};
 
-
+const stop = async () => {
     // Unsubscribe listeners from new or lost client events
     api.off(connectionSubscription);
     api.off(disconnectionSubscription);
 
     // Shut down the socket.io connection
-    yield api.stop();
+    await api.stop();
 
     // Close the HTTP server
     // Don't forget to close active clients (server-destroy is a good helper for this)
     server.close();
-});
+};
 
 run();
+
+// stop(); When exiting the application
+
 ```
 
 ### Use an API from a node.js client application
 ```js
-const api = require("api.io").client;
-const co = require("co");
+"use strict";
 
-let run = co.wrap(function*() {
+const api = require("api.io").client;
+
+const run = async () => {
     // Connect to the API server via socket.io
-    yield api.connect({
+    await api.connect({
         hostname: "localhost",
         port: 8080
     }, (status, message) => {
@@ -102,29 +121,29 @@ let run = co.wrap(function*() {
     // => 1
 
     // Do a function call to a myApi server-side function
-    let result = yield api.myApi.sum(1, 2);
+    const result = await api.myApi.sum(1, 2);
     // result === 3
 
-    // Do a function call to a myApi server-side generator function
-    let result2 = yield api.myApi.sumGen(1, 3);
+    // Do a function call to a myApi server-side async function
+    const result2 = await api.myApi.sumAsync(1, 3);
     // result2 === 4
 
     // Subscribe to myApi event1
-    let subscription1 = api.myApi.on("event1", function*(data) {
+    const subscription1 = api.myApi.on("event1", async (data) => {
         // data === "Hello World"
-        // Both generator functions and ordinary functions are supported
+        // Both async functions and ordinary functions are supported
     });
 
     // Subscribe to myApi event2
-    let subscription2 = api.myApi.on("event2", function(data) {
+    const subscription2 = api.myApi.on("event2", (data) => {
         // data === "Hello World"
-        // Both generator functions and ordinary functions are supported
+        // Both async functions and ordinary functions are supported
     });
 
     // Unsubscribe from events
     api.myApi.off(subscription1);
     api.myApi.off(subscription2);
-});
+};
 
 run();
 ```
@@ -137,20 +156,24 @@ require.config({
     baseUrl: ".",
     paths: {
         "socket.io-client": "/socket.io/socket.io",
-        "api.io-client": "/api.io/api.io-client",
-        "co": "/api.io/co"
+        "api.io-client": "/api.io/api.io-client"
     }
 });
 
 define([ "api.io-client", "co" ], (api, co) => {
-    let run = co.wrap(function*() {
+    "use strict";
+
+    const api = require("api.io").client;
+
+    const run = async () => {
         // Connect to the API server via socket.io
-        yield api.connect({
-            hostname: location.hostname,
+        await api.connect({
+            hostname: "localhost",
             port: 8080
         }, (status, message) => {
             if (status === "timeout") {
                 console.error(message);
+                process.exit(255);
             } else if (status === "disconnect") {
                 console.error("Disconnected from server, will attempt to reconnect...");
             } else if (status === "reconnect") {
@@ -162,29 +185,29 @@ define([ "api.io-client", "co" ], (api, co) => {
         // => 1
 
         // Do a function call to a myApi server-side function
-        let result = yield api.myApi.sum(1, 2);
+        const result = await api.myApi.sum(1, 2);
         // result === 3
 
-        // Do a function call to a myApi server-side generator function
-        let result2 = yield api.myApi.sumGen(1, 3);
+        // Do a function call to a myApi server-side async function
+        const result2 = await api.myApi.sumAsync(1, 3);
         // result2 === 4
 
         // Subscribe to myApi event1
-        let subscription1 = api.myApi.on("event1", function*(data) {
+        const subscription1 = api.myApi.on("event1", async (data) => {
             // data === "Hello World"
-            // Both generator functions and ordinary functions are supported
+            // Both async functions and ordinary functions are supported
         });
 
         // Subscribe to myApi event2
-        let subscription2 = api.myApi.on("event2", function(data) {
+        const subscription2 = api.myApi.on("event2", (data) => {
             // data === "Hello World"
-            // Both generator functions and ordinary functions are supported
+            // Both async functions and ordinary functions are supported
         });
 
         // Unsubscribe from events
         api.myApi.off(subscription1);
         api.myApi.off(subscription2);
-    });
+    };
 
     run();
 });

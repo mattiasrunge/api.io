@@ -4,16 +4,15 @@ const fs = require("fs");
 const path = require("path");
 const socket = require("socket.io");
 const cookie = require("cookie");
-const uuid = require("node-uuid");
+const uuid = require("uuid");
 const EventEmitter = require("events");
-const co = require("co");
 const version = require("./package.json").version;
 
 let io = null;
 let definitions = {};
 let objects = {};
-let emitter = new EventEmitter();
-let files = {};
+const emitter = new EventEmitter();
+const files = {};
 
 const EXPORT_PROP_NAME = "__exported";
 
@@ -22,8 +21,8 @@ const getParamNames = (fn) => {
     const STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
     const ARGUMENT_NAMES = /([^\s,]+)/g;
 
-    let fnStr = fn.toString().replace(STRIP_COMMENTS, "");
-    let result = fnStr.slice(fnStr.indexOf("(") + 1, fnStr.indexOf(")")).match(ARGUMENT_NAMES);
+    const fnStr = fn.toString().replace(STRIP_COMMENTS, "");
+    const result = fnStr.slice(fnStr.indexOf("(") + 1, fnStr.indexOf(")")).match(ARGUMENT_NAMES);
 
     return result === null ? [] : result;
 };
@@ -39,7 +38,7 @@ module.exports = {
 
             io = socket(server);
 
-            io.set("authorization", function(request, accept) {
+            io.set("authorization", (request, accept) => {
                 if (sessions) {
                     options.sessionName = options.sessionName || "apiio";
                     options.sessionMaxAge = options.sessionMaxAge || 1000 * 60 * 60 * 24 * 7;
@@ -54,14 +53,14 @@ module.exports = {
                     }
 
                     if (!sessionId || !sessions[sessionId]) {
-                        sessionId = uuid.v4();
+                        sessionId = uuid();
 
                         sessions[sessionId] = {
                             _id: sessionId
                         };
                     }
 
-                    let session = sessions[sessionId];
+                    const session = sessions[sessionId];
 
                     session._expires = new Date(new Date().getTime() + options.sessionMaxAge);
 
@@ -77,11 +76,12 @@ module.exports = {
                 }
 
                 client.session = client.session || {};
+                client.wantedEvents = [];
 
-                for (let namespace of Object.keys(definitions)) {
-                    for (let method of Object.keys(definitions[namespace])) {
-                        client.on(namespace + "." + method, (data, ack) => {
-                            let clientStack = data.__stack;
+                for (const namespace of Object.keys(definitions)) {
+                    for (const method of Object.keys(definitions[namespace])) {
+                        client.on(`${namespace}.${method}`, (data, ack) => {
+                            const clientStack = data.__stack;
                             delete data.__stack;
 
                             module.exports._call(client.session, namespace, method, data)
@@ -89,7 +89,7 @@ module.exports = {
                                 ack(null, result);
                             })
                             .catch((error) => {
-                                console.error("Call to " + namespace + "." + method + " threw: " + error);
+                                console.error(`Call to ${namespace}.${method} threw: ${error}`);
                                 console.error("client stack", clientStack);
                                 console.error("data", JSON.stringify(data, null, 2));
                                 console.error(error.stack);
@@ -98,6 +98,18 @@ module.exports = {
                         });
                     }
                 }
+
+                client.on("_subscribeToEvent", (event) => {
+                    client.wantedEvents.push(event);
+                });
+
+                client.on("_unsubscribeFromEvent", (event) => {
+                    const index = client.wantedEvents.indexOf(event);
+
+                    if (index !== -1) {
+                        client.wantedEvents.splice(index, 1);
+                    }
+                });
 
                 client.on("disconnect", () => {
                     emitter.emit("disconnection", client);
@@ -132,29 +144,29 @@ module.exports = {
             throw new Error("Call on non-function");
         }
 
-        let args = definitions[namespace][method].value.map((name) => data[name]);
+        const args = definitions[namespace][method].value.map((name) => data[name]);
         args.unshift(session);
 
-        return Promise.resolve(objects[namespace][method].apply(objects[namespace], args));
+        return Promise.resolve(objects[namespace][method](...args));
     },
     _addRoutes: (server) => {
-        let listeners = server.listeners("request").slice(0);
+        const listeners = server.listeners("request").slice(0);
         server.removeAllListeners("request");
 
         server.on("request", (request, response) => {
-            let url = path.normalize(request.url);
+            const url = path.normalize(request.url);
 
             if (url.indexOf("/api.io/") === 0) {
                 module.exports._serveFiles(request, response, url);
             } else {
-                for (let listener of listeners) {
+                for (const listener of listeners) {
                     listener.call(server, request, response);
                 }
             }
         });
     },
     _serveFiles: (request, response, url) => {
-        let etag = request.headers["if-none-match"];
+        const etag = request.headers["if-none-match"];
 
         if (etag) {
             if (version === etag) {
@@ -182,7 +194,7 @@ module.exports = {
                 return resolve(files[url]);
             }
 
-            let filename = path.resolve(__dirname, "browser", url);
+            const filename = path.resolve(__dirname, "browser", url);
 
             fs.access(filename, fs.R_OK, (error) => {
                 if (error) {
@@ -204,22 +216,17 @@ module.exports = {
         definitions[namespace] = {};
         objects[namespace] = obj;
 
-        for (let name of Object.keys(obj)) {
+        for (const name of Object.keys(obj)) {
             if (name[0] === "_") {
                 // Private parameter
                 continue;
             } else if (module.exports._isExported(obj[name])) {
-                let params = getParamNames(obj[name]);
+                const params = getParamNames(obj[name]);
                 params.shift(); // Remove session
 
                 definitions[namespace][name] = { type: "function", value: params };
-                // Wrap generator functions
-                if (obj[name].constructor.name === "GeneratorFunction") {
-                    obj[name] = co.wrap(obj[name]);
-                }
-            } else if (obj[name].constructor.name === "Function" ||
-                obj[name].constructor.name === "GeneratorFunction") {
-                // non-exported function or generator function, skip it
+            } else if (obj[name].constructor.name === "Function") {
+                // non-exported function, skip it
                 continue;
             } else {
                 // Everything else is an exported constant
@@ -232,25 +239,29 @@ module.exports = {
                 return;
             }
 
-            if (!sessionFilter || typeof sessionFilter !== "object") {
-                return io.emit(namespace + "." + event, data);
-            }
+            const nsevent = `${namespace}.${event}`;
 
             Object.keys(io.sockets.sockets)
             .map((id) => {
                 return io.sockets.sockets[id];
             })
             .filter((client) => {
-                for (let key of Object.keys(sessionFilter)) {
-                    if (sessionFilter[key] !== client.session[key]) {
-                        return false;
+                if (sessionFilter && typeof sessionFilter === "object") {
+                    for (const key of Object.keys(sessionFilter)) {
+                        if (sessionFilter[key] !== client.session[key]) {
+                            return false;
+                        }
                     }
+                }
+
+                if (!client.wantedEvents.includes(nsevent)) {
+                    return false;
                 }
 
                 return true;
             })
             .forEach((client) => {
-                client.emit(namespace + "." + event, data);
+                client.emit(nsevent, data);
             });
         };
 
@@ -277,24 +288,19 @@ module.exports = {
         return (typeof func === "function") && (func[EXPORT_PROP_NAME] === true);
     },
     on: (event, fn) => {
-        if (fn.constructor.name === "GeneratorFunction") {
-            let fn2 = fn;
-            fn = co.wrap(fn2);
-        }
+        const events = event.split("|");
 
-        let events = event.split("|");
-
-        for (let event of events) {
+        for (const event of events) {
             emitter.on(event, fn);
         }
 
         return { events: events, fn: fn };
     },
     off: (subscription) => {
-        let subscriptions = subscription instanceof Array ? subscription : [ subscription ];
+        const subscriptions = subscription instanceof Array ? subscription : [ subscription ];
 
-        for (let subscription of subscriptions) {
-            for (let event of subscription.events) {
+        for (const subscription of subscriptions) {
+            for (const event of subscription.events) {
                 emitter.removeListener(event, subscription.fn);
             }
         }
