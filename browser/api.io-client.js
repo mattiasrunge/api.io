@@ -12,7 +12,7 @@ define(["module", "socket.io-client"], function (module, socket) {
 
             return new Promise((resolve, reject) => {
                 const protocol = params.secure ? "wss" : "ws";
-                const url = `${ protocol }://${ params.hostname }:${ params.port }`;
+                const url = `${protocol}://${params.hostname}:${params.port}`;
                 const options = {
                     secure: params.secure
                 };
@@ -21,7 +21,7 @@ define(["module", "socket.io-client"], function (module, socket) {
                     const sessionName = config.sessionName || "apiio";
 
                     options.extraHeaders = {
-                        cookie: `${ sessionName }=${ config.sessionId }`
+                        cookie: `${sessionName}=${config.sessionId}`
                     };
                 }
 
@@ -39,21 +39,21 @@ define(["module", "socket.io-client"], function (module, socket) {
 
                 io.on("connect_error", error => {
                     connected = false;
-                    const errorString = `Error while connecting to ${ url }, ${ error }`;
+                    const errorString = `Error while connecting to ${url}, ${error}`;
                     reject(errorString);
                     statusFn("error", errorString);
                 });
 
                 io.on("connect_timeout", error => {
                     connected = false;
-                    const errorString = `Timed out while connecting to ${ url }, ${ error }`;
+                    const errorString = `Timed out while connecting to ${url}, ${error}`;
                     reject(errorString);
                     statusFn("timeout", errorString);
                 });
 
                 io.on("reconnect_failed", error => {
                     connected = false;
-                    const errorString = `Error while reconnecting to ${ url }, ${ error }`;
+                    const errorString = `Error while reconnecting to ${url}, ${error}`;
                     statusFn("error", errorString);
                 });
 
@@ -71,7 +71,7 @@ define(["module", "socket.io-client"], function (module, socket) {
                             const item = definitions[namespace][itemName];
 
                             if (item.type === "function") {
-                                const method = `${ namespace }.${ itemName }`;
+                                const method = `${namespace}.${itemName}`;
                                 const argNames = item.value;
 
                                 this[namespace][itemName] = function (...args) {
@@ -86,21 +86,29 @@ define(["module", "socket.io-client"], function (module, socket) {
                             } else if (item.type === "constant") {
                                 this[namespace][itemName] = item.value;
                             } else {
-                                throw new Error(`Unknown item type: ${ item.type }`);
+                                throw new Error(`Unknown item type: ${item.type}`);
                             }
                         }
 
-                        this[namespace].on = function (ns, event, fn) {
+                        this[namespace].on = function (ns, event, fn, opts) {
+                            opts = typeof opts !== "undefined" ? opts : {
+                                id: false,
+                                query: false
+                            };
                             const events = event.split("|");
+                            // If a filter query is used, add a suffix to subscribed
+                            // event to distinguiosh subscriptions for same event
+                            // but with different filter queries.
+                            const subEventIdSuffix = opts.query !== false ? `#${opts.id}` : "";
 
                             for (const event of events) {
-                                const nsevent = `${ ns }.${ event }`;
+                                const nsevent = `${ns}.${event}${subEventIdSuffix}`;
 
-                                io.emit("_subscribeToEvent", nsevent);
+                                io.emit("_subscribeToEvent", nsevent, opts.query);
                                 io.on(nsevent, fn);
                             }
 
-                            return { events: events, namespace: ns, fn: fn };
+                            return { events: events, namespace: ns, fn: fn, subEventIdSuffix: subEventIdSuffix };
                         }.bind(this, namespace);
 
                         this[namespace].off = subscription => {
@@ -108,7 +116,7 @@ define(["module", "socket.io-client"], function (module, socket) {
 
                             for (const subscription of subscriptions) {
                                 for (const event of subscription.events) {
-                                    const nsevent = `${ subscription.namespace }.${ event }`;
+                                    const nsevent = `${subscription.namespace}.${event}${subscription.subEventIdSuffix}`;
 
                                     io.removeListener(nsevent, subscription.fn);
                                     io.emit("_unsubscribeFromEvent", nsevent);

@@ -27,9 +27,9 @@ const myApi = api.register("myApi", {
         // Exported async function included in the exposed API
         return a + b;
     }),
-    send: api.export((session) => {
+    send: api.export((session, data) => {
         // Exported function included in the exposed API
-        myApi.emit("event3", "ABC");
+        myApi.emit("event4", data);
     })
 });
 
@@ -74,6 +74,11 @@ const run = async (port) => {
 
     // Emit event2 to client in the myApi namespace that have a session with username = "guest"
     myApi.emit("event2", "Hello World!", { username: "guest" });
+
+    // Emit event3 to all clients in the myApi namespace
+    for (const value of [ 1, 2, 3, 4, 5 ]) {
+        myApi.emit("event3", value);
+    }
 };
 
 const stop = async () => {
@@ -140,9 +145,24 @@ const run = async () => {
         // Both async functions and ordinary functions are supported
     });
 
+    // Subscribe to myApi event3 but only for values => 4
+    // using a MongoDB style query. The query is evaluated using
+    // [sift](https://www.npmjs.com/package/sift).
+    // Note that when using queries, an id unique per query for
+    // the specific event needs to be supplied as well.
+    const subscription3 = api.myApi.on("event3", (data) => {
+        // Triggered twice, first with data === { value: 4 }
+        // then with data === { value: 5 }
+        // Both async functions and ordinary functions are supported
+    }, {
+        id: 1,
+        query: { $gte: 4 }
+    });
+
     // Unsubscribe from events
     api.myApi.off(subscription1);
     api.myApi.off(subscription2);
+    api.myApi.off(subscription3);
 };
 
 run();
@@ -204,9 +224,24 @@ define([ "api.io-client", "co" ], (api, co) => {
             // Both async functions and ordinary functions are supported
         });
 
+        // Subscribe to myApi event3 but only for values => 4
+        // using a MongoDB style query. The query is evaluated using
+        // [sift](https://www.npmjs.com/package/sift).
+        // Note that when using queries, an id unique per query for
+        // the specific event needs to be supplied as well.
+        const subscription3 = api.myApi.on("event3", (data) => {
+            // Triggered twice, first with data === { value: 4 }
+            // then with data === { value: 5 }
+            // Both async functions and ordinary functions are supported
+        }, {
+            id: 1,
+            query: { $gte: 4 }
+        });
+
         // Unsubscribe from events
         api.myApi.off(subscription1);
         api.myApi.off(subscription2);
+        api.myApi.off(subscription3);
     };
 
     run();

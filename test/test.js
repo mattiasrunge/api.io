@@ -56,7 +56,7 @@ describe("Test", () => {
 
         it("should successfully get an event", async () => {
             const deferred = createDeferred();
-            const subscription1 = api.myApi.on("event3", (data) => {
+            const subscription1 = api.myApi.on("event4", (data) => {
                 try {
                     assert.equal(data, "ABC");
                     deferred.resolve();
@@ -65,7 +65,7 @@ describe("Test", () => {
                 }
             });
 
-            await api.myApi.send();
+            await api.myApi.send("ABC");
             await deferred.promise;
 
             api.myApi.off(subscription1);
@@ -73,6 +73,57 @@ describe("Test", () => {
 
         it("should not expose not-exported functions", () => {
             assert.notProperty(api.myApi, "notApi");
+        });
+
+        it("should successfully get events with queries", async () => {
+            const positivesDoneDeferred = createDeferred();
+            const negativesDoneDeferred = createDeferred();
+            const positiveValues = [];
+            const negativeValues = [];
+            const handleData = (resultArray, endValue, doneDeferred, data) => {
+                if (data === endValue) {
+                    return doneDeferred.resolve();
+                }
+                resultArray.push(data);
+            };
+
+            /** Subscribe for positive values for event4 */
+            const subscription1 = api.myApi.on(
+                "event4",
+                handleData.bind(null, positiveValues, 0, positivesDoneDeferred),
+                {
+                    id: 1,
+                    query: {
+                        $gte: 0
+                    }
+                }
+            );
+            /** Subscribe for negative values for event4 */
+            const subscription2 = api.myApi.on(
+                "event4",
+                handleData.bind(null, negativeValues, 0, negativesDoneDeferred),
+                {
+                    id: 2,
+                    query: {
+                        $lte: 0
+                    }
+                }
+            );
+
+            await api.myApi.send(1);
+            await api.myApi.send(2);
+            await api.myApi.send(-1);
+            await api.myApi.send(-2);
+            await api.myApi.send(-3);
+            await api.myApi.send(0);
+            await positivesDoneDeferred.promise;
+            await negativesDoneDeferred.promise;
+
+            assert.deepEqual(positiveValues, [ 1, 2 ]);
+            assert.deepEqual(negativeValues, [ -1, -2, -3 ]);
+
+            api.myApi.off(subscription1);
+            api.myApi.off(subscription2);
         });
 
         it("should successfully interact with second API", async () => {

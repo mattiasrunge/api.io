@@ -17,9 +17,9 @@ const myApi = api.register("myApi", {
         // Exported async function included in the exposed API
         return a + b;
     }),
-    send: api.export((session) => {
+    send: api.export((session, data) => {
         // Exported function included in the exposed API
-        myApi.emit("event3", "ABC");
+        myApi.emit("event4", data);
     })
 });
 
@@ -64,6 +64,13 @@ const run = async (port) => {
 
     // Emit event2 to client in the myApi namespace that have a session with username = "guest"
     myApi.emit("event2", "Hello World!", { username: "guest" });
+
+    // Emit event3 to all clients in the myApi namespace
+    for (const value of [ 1, 2, 3, 4, 5 ]) {
+        myApi.emit("event3", {
+            value: value
+        });
+    }
 };
 
 const stop = async () => {

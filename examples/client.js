@@ -41,9 +41,24 @@ const run = async () => {
         // Both async functions and ordinary functions are supported
     });
 
+    // Subscribe to myApi event3 but only for values => 4
+    // using a MongoDB style query. The query is evaluated using
+    // [sift](https://www.npmjs.com/package/sift).
+    // Note that when using queries, an id unique per query for
+    // the specific event needs to be supplied as well.
+    const subscription3 = api.myApi.on("event3", (data) => {
+        // Triggered twice, first with data === { value: 4 }
+        // then with data === { value: 5 }
+        // Both async functions and ordinary functions are supported
+    }, {
+        id: 1,
+        query: { $gte: 4 }
+    });
+
     // Unsubscribe from events
     api.myApi.off(subscription1);
     api.myApi.off(subscription2);
+    api.myApi.off(subscription3);
 };
 
 run();

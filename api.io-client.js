@@ -91,17 +91,25 @@ const Client = function() {
                         }
                     }
 
-                    this[namespace].on = function(ns, event, fn) {
+                    this[namespace].on = function(ns, event, fn, opts) {
+                        opts = typeof opts !== "undefined" ? opts : {
+                            id: false,
+                            query: false
+                        };
                         const events = event.split("|");
+                        // If a filter query is used, add a suffix to subscribed
+                        // event to distinguiosh subscriptions for same event
+                        // but with different filter queries.
+                        const subEventIdSuffix = opts.query !== false ? `#${opts.id}` : "";
 
                         for (const event of events) {
-                            const nsevent = `${ns}.${event}`;
+                            const nsevent = `${ns}.${event}${subEventIdSuffix}`;
 
-                            io.emit("_subscribeToEvent", nsevent);
+                            io.emit("_subscribeToEvent", nsevent, opts.query);
                             io.on(nsevent, fn);
                         }
 
-                        return { events: events, namespace: ns, fn: fn };
+                        return { events: events, namespace: ns, fn: fn, subEventIdSuffix: subEventIdSuffix };
                     }.bind(this, namespace);
 
                     this[namespace].off = (subscription) => {
@@ -109,7 +117,7 @@ const Client = function() {
 
                         for (const subscription of subscriptions) {
                             for (const event of subscription.events) {
-                                const nsevent = `${subscription.namespace}.${event}`;
+                                const nsevent = `${subscription.namespace}.${event}${subscription.subEventIdSuffix}`;
 
                                 io.removeListener(nsevent, subscription.fn);
                                 io.emit("_unsubscribeFromEvent", nsevent);

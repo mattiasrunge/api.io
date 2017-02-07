@@ -3,6 +3,7 @@
 const fs = require("fs");
 const path = require("path");
 const socket = require("socket.io");
+const sift = require("sift");
 const cookie = require("cookie");
 const uuid = require("uuid");
 const EventEmitter = require("events");
@@ -99,12 +100,40 @@ module.exports = {
                     }
                 }
 
-                client.on("_subscribeToEvent", (event) => {
-                    client.wantedEvents.push(event);
+                /* Adds event to client.wantedEvents.
+                 * client.wantedEvents is an array of objects with attributes
+                 * event: Event subscribed from client. If subscribed with
+                 *   query, event contains an ID unique per event and query
+                 *   used by the server to distinguiosh which client that belongs
+                 *   to which query.
+                 * baseEvent: Identifies the data that the filter query shall
+                 *   be applied on. If no query is given, baseEvent === event.
+                 * query: MongoDB style query using sift
+                 */
+                client.on("_subscribeToEvent", (event, query) => {
+                    const subEventIdStartIndex = event.lastIndexOf("#");
+                    let wantedEvent;
+                    if (subEventIdStartIndex !== -1 && query) {
+                        wantedEvent = {
+                            event: event,
+                            baseEvent: event.slice(0, subEventIdStartIndex),
+                            query: query
+                        };
+                    } else if (!client.wantedEvents.some((item) => item.event === event)) {
+                        // Add if not already subscribed
+                        wantedEvent = {
+                            event: event,
+                            baseEvent: event,
+                            query: false
+                        };
+                    }
+                    if (wantedEvent) {
+                        client.wantedEvents.push(wantedEvent);
+                    }
                 });
 
                 client.on("_unsubscribeFromEvent", (event) => {
-                    const index = client.wantedEvents.indexOf(event);
+                    const index = client.wantedEvents.find((item) => item.event === event);
 
                     if (index !== -1) {
                         client.wantedEvents.splice(index, 1);
@@ -254,14 +283,24 @@ module.exports = {
                     }
                 }
 
-                if (!client.wantedEvents.includes(nsevent)) {
+                if (!client.wantedEvents.some((item) => item.baseEvent === nsevent)) {
                     return false;
                 }
 
                 return true;
             })
             .forEach((client) => {
-                client.emit(nsevent, data);
+                const eventInfos = client.wantedEvents.filter((item) => item.baseEvent === nsevent);
+                for (const eventInfo of eventInfos) {
+                    if (eventInfo.query) {
+                        const matches = sift(eventInfo.query, [ data ]);
+                        if (matches.length > 0) {
+                            client.emit(eventInfo.event, data);
+                        }
+                    } else {
+                        client.emit(eventInfo.event, data);
+                    }
+                }
             });
         };
 

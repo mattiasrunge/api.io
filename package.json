@@ -21,17 +21,18 @@
   "homepage": "https://github.com/mattiasrunge/api.io#readme",
   "dependencies": {
     "cookie": "0.3.1",
+    "sift": "^3.2.6",
     "socket.io": "1.6.0",
     "uuid": "3.0.0"
   },
   "devDependencies": {
-    "chai": "3.5.0",
-    "get-port": "2.1.0",
-    "mocha": "3.1.2",
-    "babel-eslint": "7.0.0",
-    "eslint": "3.7.0",
     "babel-cli": "6.18.0",
-    "babel-plugin-transform-es2015-modules-amd": "6.18.0"
+    "babel-eslint": "7.0.0",
+    "babel-plugin-transform-es2015-modules-amd": "6.18.0",
+    "chai": "3.5.0",
+    "eslint": "3.7.0",
+    "get-port": "2.1.0",
+    "mocha": "3.1.2"
   },
   "engines": {
     "node": ">= 7.0.0"
