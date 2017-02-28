@@ -133,7 +133,7 @@ module.exports = {
                 });
 
                 client.on("_unsubscribeFromEvent", (event) => {
-                    const index = client.wantedEvents.find((item) => item.event === event);
+                    const index = client.wantedEvents.findIndex((item) => item.event === event);
 
                     if (index !== -1) {
                         client.wantedEvents.splice(index, 1);
