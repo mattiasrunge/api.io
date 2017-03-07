@@ -65,18 +65,19 @@ module.exports = {
 
                     session._expires = new Date(new Date().getTime() + options.sessionMaxAge);
 
-                    request.sessionId = sessionId;
+                    request.session = session;
                 }
 
-                accept(null, true);
+                request.session = request.session || {};
+
+                options.authHandler = options.authHandler || (() => Promise.resolve());
+                options.authHandler(request)
+                    .then(() => accept(null, true))
+                    .catch((err) => accept(err, false));
             });
 
             io.on("connection", (client) => {
-                if (client.request.sessionId && sessions) {
-                    client.session = sessions[client.request.sessionId];
-                }
-
-                client.session = client.session || {};
+                client.session = client.request.session;
                 client.wantedEvents = [];
 
                 for (const namespace of Object.keys(definitions)) {
