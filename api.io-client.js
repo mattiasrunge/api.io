@@ -142,7 +142,9 @@ const Client = function() {
 
             io.emit(method, args || {}, (error, result) => {
                 if (error) {
-                    return reject(error);
+                    console.error(`api.io call to ${method} failed: ${error.message}`, error);
+                    const err = new Error(error.message);
+                    return reject(err);
                 }
 
                 resolve(result);

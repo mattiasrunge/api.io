@@ -93,9 +93,14 @@ module.exports = {
                             .catch((error) => {
                                 console.error(`Call to ${namespace}.${method} threw: ${error}`);
                                 console.error("client stack", clientStack);
-                                console.error("data", JSON.stringify(data, null, 2));
+                                if (options.debug) {
+                                    console.error("data", JSON.stringify(data, null, 2));
+                                }
                                 console.error(error.stack);
-                                ack(error.stack);
+                                ack({
+                                    message: error.message,
+                                    stack: error.stack
+                                });
                             });
                         });
                     }
