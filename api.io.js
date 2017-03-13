@@ -96,9 +96,11 @@ module.exports = {
                                 if (options.debug) {
                                     console.error("data", JSON.stringify(data, null, 2));
                                 }
-                                console.error(error.stack);
+                                if (error.stack) {
+                                    console.error(error.stack);
+                                }
                                 ack({
-                                    message: error.message,
+                                    message: error.message || error,
                                     stack: error.stack
                                 });
                             });
