@@ -25,7 +25,7 @@ const myApi = api.register("myApi", {
 
 // Registers the api with the name myApi2
 const myApi2 = api.register("myApi2", {
-    send: api.export(async (session) => {
+    send: api.export(async (/* session */) => {
         // Exported generator function included in the exposed API
         myApi2.emit("eventX", "Over myApi2");
     })
@@ -53,7 +53,7 @@ const run = async (port) => {
     });
 
     // Subscribe a listener for lost clients
-    disconnectionSubscription = api.on("disconnection", (client) => {
+    disconnectionSubscription = api.on("disconnection", (/* client */) => {
         // Do something with client
         // client.session is available
         // Both generator functions and ordinary functions are supported

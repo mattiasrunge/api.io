@@ -1,6 +1,6 @@
 {
   "name": "api.io",
-  "version": "0.7.1",
+  "version": "1.0.0",
   "description": "Small framework for easily exposing an API over websockets to clients",
   "main": "api.io.js",
   "repository": {
@@ -20,26 +20,24 @@
   },
   "homepage": "https://github.com/mattiasrunge/api.io#readme",
   "dependencies": {
-    "cookie": "0.3.1",
+    "cookie": "^0.3.1",
     "sift": "^3.2.6",
-    "socket.io": "1.6.0",
-    "uuid": "3.0.0"
+    "socket.io": "^2.0.3",
+    "uuid": "^3.1.0"
   },
   "devDependencies": {
-    "babel-cli": "6.18.0",
-    "babel-eslint": "7.0.0",
-    "babel-plugin-transform-es2015-modules-amd": "6.18.0",
-    "chai": "3.5.0",
-    "eslint": "3.7.0",
-    "get-port": "2.1.0",
-    "mocha": "3.1.2"
+    "babel-cli": "^6.26.0",
+    "babel-eslint": "^7.2.3",
+    "chai": "^4.1.1",
+    "eslint": "^4.5.0",
+    "get-port": "^3.2.0",
+    "mocha": "^3.5.0"
   },
   "engines": {
-    "node": ">= 7.0.0"
+    "node": ">= 8.0.0"
   },
   "scripts": {
-    "compile": "mkdir -p browser && babel api.io-client.js --plugins transform-es2015-modules-amd --out-file browser/api.io-client.js",
-    "test": "mocha --harmony_async_await --recursive && npm run lint",
-    "lint": "eslint api.io-client.js api.io.js"
+    "test": "mocha --recursive && npm run lint",
+    "lint": "eslint api.io-client.js api.io.js examples/*.js test/*.js"
   }
 }

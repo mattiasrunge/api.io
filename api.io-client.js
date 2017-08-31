@@ -9,7 +9,7 @@ const Client = function() {
 
     this.connect = (config, statusFn) => {
         params = config;
-        statusFn = statusFn || function() {};
+        statusFn = statusFn || (() => {});
 
         return new Promise((resolve, reject) => {
             const protocol = params.secure ? "wss" : "ws";
@@ -109,7 +109,15 @@ const Client = function() {
                             io.on(nsevent, fn);
                         }
 
-                        return { events: events, namespace: ns, fn: fn, subEventIdSuffix: subEventIdSuffix };
+                        const subscription = {
+                            events: events,
+                            namespace: ns,
+                            fn: fn,
+                            subEventIdSuffix: subEventIdSuffix,
+                            dispose: () => this[namespace].off(subscription)
+                        };
+
+                        return subscription;
                     }.bind(this, namespace);
 
                     this[namespace].off = (subscription) => {

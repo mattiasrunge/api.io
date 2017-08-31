@@ -1,19 +1,15 @@
 "use strict";
 
-const fs = require("fs");
-const path = require("path");
 const socket = require("socket.io");
 const sift = require("sift");
 const cookie = require("cookie");
 const uuid = require("uuid");
 const EventEmitter = require("events");
-const version = require("./package.json").version;
 
 let io = null;
 let definitions = {};
 let objects = {};
 const emitter = new EventEmitter();
-const files = {};
 
 const EXPORT_PROP_NAME = "__exported";
 
@@ -28,15 +24,12 @@ const getParamNames = (fn) => {
     return result === null ? [] : result;
 };
 
-// Credits: File serving is inspired by how socket.io does it
 module.exports = {
-    client: require("./api.io-client"),
+    getClient: () => require("./api.io-client"),
     start: (server, options, sessions) => {
         options = options || {};
 
         return new Promise((resolve) => {
-            module.exports._addRoutes(server);
-
             io = socket(server);
 
             io.set("authorization", (request, accept) => {
@@ -87,23 +80,23 @@ module.exports = {
                             delete data.__stack;
 
                             module.exports._call(client.session, namespace, method, data)
-                            .then((result) => {
-                                ack(null, result);
-                            })
-                            .catch((error) => {
-                                console.error(`Call to ${namespace}.${method} threw: ${error}`);
-                                console.error("client stack", clientStack);
-                                if (options.debug) {
-                                    console.error("data", JSON.stringify(data, null, 2));
-                                }
-                                if (error.stack) {
-                                    console.error(error.stack);
-                                }
-                                ack({
-                                    message: error.message || error,
-                                    stack: error.stack
+                                .then((result) => {
+                                    ack(null, result);
+                                })
+                                .catch((error) => {
+                                    console.error(`Call to ${namespace}.${method} threw: ${error}`);
+                                    console.error("client stack", clientStack);
+                                    if (options.debug) {
+                                        console.error("data", JSON.stringify(data, null, 2));
+                                    }
+                                    if (error.stack) {
+                                        console.error(error.stack);
+                                    }
+                                    ack({
+                                        message: error.message || error,
+                                        stack: error.stack
+                                    });
                                 });
-                            });
                         });
                     }
                 }
@@ -186,69 +179,6 @@ module.exports = {
 
         return Promise.resolve(objects[namespace][method](...args));
     },
-    _addRoutes: (server) => {
-        const listeners = server.listeners("request").slice(0);
-        server.removeAllListeners("request");
-
-        server.on("request", (request, response) => {
-            const url = path.normalize(request.url);
-
-            if (url.indexOf("/api.io/") === 0) {
-                module.exports._serveFiles(request, response, url);
-            } else {
-                for (const listener of listeners) {
-                    listener.call(server, request, response);
-                }
-            }
-        });
-    },
-    _serveFiles: (request, response, url) => {
-        const etag = request.headers["if-none-match"];
-
-        if (etag) {
-            if (version === etag) {
-                response.writeHead(304);
-                response.end();
-                return;
-            }
-        }
-
-        module.exports._getFileData(url.replace("/api.io/", ""))
-        .then((data) => {
-            response.setHeader("Content-Type", "application/javascript");
-            response.setHeader("ETag", version);
-            response.writeHead(200);
-            response.end(data);
-        })
-        .catch((error, status) => {
-            response.writeHead(status);
-            response.end(error);
-        });
-    },
-    _getFileData: function(url) {
-        return new Promise((resolve, reject) => {
-            if (files[url]) {
-                return resolve(files[url]);
-            }
-
-            const filename = path.resolve(__dirname, "browser", url);
-
-            fs.access(filename, fs.R_OK, (error) => {
-                if (error) {
-                    return reject(error, 404);
-                }
-
-                fs.readFile(filename, (error, data) => {
-                    if (error) {
-                        return reject(error, 500);
-                    }
-
-                    files[url] = data;
-                    resolve(data);
-                });
-            });
-        });
-    },
     register: (namespace, obj) => {
         definitions[namespace] = {};
         objects[namespace] = obj;
@@ -279,37 +209,37 @@ module.exports = {
             const nsevent = `${namespace}.${event}`;
 
             Object.keys(io.sockets.sockets)
-            .map((id) => {
-                return io.sockets.sockets[id];
-            })
-            .filter((client) => {
-                if (sessionFilter && typeof sessionFilter === "object") {
-                    for (const key of Object.keys(sessionFilter)) {
-                        if (sessionFilter[key] !== client.session[key]) {
-                            return false;
+                .map((id) => {
+                    return io.sockets.sockets[id];
+                })
+                .filter((client) => {
+                    if (sessionFilter && typeof sessionFilter === "object") {
+                        for (const key of Object.keys(sessionFilter)) {
+                            if (sessionFilter[key] !== client.session[key]) {
+                                return false;
+                            }
                         }
                     }
-                }
 
-                if (!client.wantedEvents.some((item) => item.baseEvent === nsevent)) {
-                    return false;
-                }
+                    if (!client.wantedEvents.some((item) => item.baseEvent === nsevent)) {
+                        return false;
+                    }
 
-                return true;
-            })
-            .forEach((client) => {
-                const eventInfos = client.wantedEvents.filter((item) => item.baseEvent === nsevent);
-                for (const eventInfo of eventInfos) {
-                    if (eventInfo.query) {
-                        const matches = sift(eventInfo.query, [ data ]);
-                        if (matches.length > 0) {
+                    return true;
+                })
+                .forEach((client) => {
+                    const eventInfos = client.wantedEvents.filter((item) => item.baseEvent === nsevent);
+                    for (const eventInfo of eventInfos) {
+                        if (eventInfo.query) {
+                            const matches = sift(eventInfo.query, [ data ]);
+                            if (matches.length > 0) {
+                                client.emit(eventInfo.event, data);
+                            }
+                        } else {
                             client.emit(eventInfo.event, data);
                         }
-                    } else {
-                        client.emit(eventInfo.event, data);
                     }
-                }
-            });
+                });
         };
 
         obj.namespace = namespace;
