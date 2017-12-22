@@ -145,6 +145,11 @@ module.exports = {
                     emitter.emit("disconnection", client);
                 });
 
+                client.on("error", (error) => {
+                    console.error(`Connection error, disconnecting: ${error}`);
+                    emitter.emit("disconnection", client);
+                });
+
                 emitter.emit("connection", client);
 
                 client.emit("ready", definitions);
