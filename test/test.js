@@ -27,6 +27,7 @@ describe("Test", () => {
     });
 
     after(async () => {
+        await api.disconnect();
         await server.stop();
     });
 

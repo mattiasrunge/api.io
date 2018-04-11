@@ -158,11 +158,15 @@ module.exports = {
             resolve();
         });
     },
-    stop: () => {
+    stop: (clearDefinition = true) => {
         return new Promise((resolve) => {
             io = null;
-            definitions = {};
-            objects = {};
+
+            if (clearDefinition) {
+                definitions = {};
+                objects = {};
+            }
+
             resolve();
         });
     },
