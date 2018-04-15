@@ -100,7 +100,7 @@ const Client = function() {
                         // If a filter query is used, add a suffix to subscribed
                         // event to distinguiosh subscriptions for same event
                         // but with different filter queries.
-                        const subEventIdSuffix = opts.query !== false ? `#${opts.id}` : "";
+                        const subEventIdSuffix = opts.id ? `#${opts.id}` : "";
 
                         for (const event of events) {
                             const nsevent = `${ns}.${event}${subEventIdSuffix}`;

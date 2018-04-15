@@ -114,11 +114,11 @@ module.exports = {
                 client.on("_subscribeToEvent", (event, query) => {
                     const subEventIdStartIndex = event.lastIndexOf("#");
                     let wantedEvent;
-                    if (subEventIdStartIndex !== -1 && query) {
+                    if (subEventIdStartIndex !== -1) {
                         wantedEvent = {
                             event: event,
                             baseEvent: event.slice(0, subEventIdStartIndex),
-                            query: query
+                            query: query || false
                         };
                     } else if (!client.wantedEvents.some((item) => item.event === event)) {
                         // Add if not already subscribed
